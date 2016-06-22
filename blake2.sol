@@ -39,7 +39,7 @@ contract BLAKE2 {
 
     function F(bytes8[8] h, bytes8[16] m, uint16 t, bool f) returns (bytes8[8]){
       bytes8[16] memory v;
-
+/*
       assembly {
         let iv := 0
         IV pop
@@ -49,13 +49,19 @@ contract BLAKE2 {
         mstore(add(v,0x40),sload(iv))
         mstore(add(v,0x60),sload(add(iv,0x20)))
       }
+*/
+
+      for(uint i; i< 8; i++){
+        v[i] = h[i];
+        v[8+i] = IV[i];
+      }
 
       v[12] = v[12] ^ bytes8((uint(t) % 2**64));
       v[13] = v[13] ^ shift_left(bytes8(t),64);
 
       if(f) v[14] = v[14] ^ 0xFFFFFFFFFFFFFFFF;
 
-      for(uint i; i < 12; i++){
+      for(i = 0; i < 12; i++){
         uint[16] s = SIGMA[i%10];
 
         v = G( v, 0, 4, 8, 12, m[s[0]], m[s[1]]);
