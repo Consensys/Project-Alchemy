@@ -25,7 +25,7 @@ contract BLAKE2b {
 
 
   struct BLAKE2b_ctx {
-    uint64[16] b; //input buffer
+    uint8[128] b; //input buffer
     uint64[8] h;  //chained state
     uint64[2] t; //total bytes
     uint64 c; //Size of b
@@ -77,7 +77,7 @@ contract BLAKE2b {
     }
   }
 
-  function init(BLAKE2b_ctx ctx, uint64 outlen, uint64[] key) private{
+  function init(BLAKE2b_ctx ctx, uint64 outlen, bytes key) private{
       uint i;
 
       if(outlen == 0 || outlen > 64 || key.length > 64) throw;
@@ -94,6 +94,7 @@ contract BLAKE2b {
       ctx.c = 0;
 
       ctx.outlen = outlen;
+      i= key.length;
 
       for(i = key.length; i < 128; i++){
         ctx.b[i] = 0;
@@ -103,9 +104,10 @@ contract BLAKE2b {
         update(ctx, key);
         ctx.c = 128;
       }
+
   }
 
-  function update(BLAKE2b_ctx ctx, uint64[] input) private {
+  function update(BLAKE2b_ctx ctx, bytes input) private {
     uint i;
 
     for(i = 0; i < input.length; i++){
@@ -118,11 +120,11 @@ contract BLAKE2b {
         ctx.c = 0;
       }
 
-      ctx.b[ctx.c++] = input[i]; //THIS NEEDS WORK________
+      ctx.b[ctx.c++] = uint8(input[i]); //THIS NEEDS WORK________
     }
   }
 
-  function finalize(BLAKE2b_ctx ctx, uint64[] out) private {
+  function finalize(BLAKE2b_ctx ctx, uint64[8] out) private {
     uint i;
 
     ctx.t[0] += ctx.c;
@@ -134,18 +136,21 @@ contract BLAKE2b {
 
     compress(ctx,true);
 
-    for(i=0; i< ctx.outlen; i++){
+
+    for(i=0; i< ctx.outlen/8; i++){
       out[i] = (shift_right(ctx.h[shift_right(uint64(i),3)], 8* (i & 7))) & 0xFF;
     }
   }
 
-  function blake2b(uint64[] key, uint64[] input, uint64 outlen) constant returns(uint64[]){
+  function blake2b(bytes key, bytes input, uint64 outlen) constant returns(uint64[8]){
     BLAKE2b_ctx memory ctx;
-    uint64[] memory out;
+    uint64[8] memory out;
+
 
     init(ctx, outlen, key);
     update(ctx, input);
     finalize(ctx, out);
+    return out;
   }
 
 // Utility functions
