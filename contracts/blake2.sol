@@ -39,6 +39,7 @@ contract BLAKE2b {
   event PreCompress(uint64[16] v, uint64[16] m);
   event PostCompress(uint64[16] v);
   event Update(uint8[128] b, uint64[8] h, uint64[2] t);
+  event H(uint64[8] h);
 
   function G(uint64[16] v, uint a, uint b, uint c, uint d, uint64 x, uint64 y) constant { //OPTIMIZE HERE
        v[a] = v[a] + v[b] + x;
@@ -55,6 +56,8 @@ contract BLAKE2b {
     uint64[16] memory v;
     uint64[16] memory m;
 
+
+
     for(uint i=0; i<8; i++){
       v[i] = ctx.h[i];
       v[i+8] = IV[i];
@@ -67,10 +70,14 @@ contract BLAKE2b {
     if(last) v[14] = ~v[14];
 
     for(i = 0; i <16; i++){
-      m[i] = getWords(ctx.b[i]);
+      uint64 mi = 0;
+      for(uint j; j < 8; j++){
+        mi = mi ^ shift_left(ctx.b[i*j + j], j*8);
+      }
+      m[i] = mi;
     }
 
-
+    PreCompress(v,m);
 
     for(i=0; i<12; i++){
       G( v, 0, 4, 8, 12, m[SIGMA[i][0]], m[SIGMA[i][1]]);
@@ -81,13 +88,14 @@ contract BLAKE2b {
       G( v, 1, 6, 11, 12, m[SIGMA[i][10]], m[SIGMA[i][11]]);
       G( v, 2, 7, 8, 13, m[SIGMA[i][12]], m[SIGMA[i][13]]);
       G( v, 3, 4, 9, 14, m[SIGMA[i][14]], m[SIGMA[i][15]]);
+      PostCompress(v);
     }
 
-    PostCompress(v);
 
     for(i=0; i<8; ++i){
       ctx.h[i] = ctx.h[i] ^ v[i] ^ v[i+8];
     }
+    H(ctx.h);
   }
 
   function init(BLAKE2b_ctx ctx, uint64 outlen, bytes key) private{
