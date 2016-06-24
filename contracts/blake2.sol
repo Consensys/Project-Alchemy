@@ -162,7 +162,8 @@ contract BLAKE2b {
 
 
     for(i=0; i< ctx.outlen/8; i++){
-      out[i] = (shift_right(ctx.h[shift_right(uint64(i),3)], 8* (i & 7))) & 0xFF;
+      out[i] = toLittleEndian(ctx.h[i]);
+      //out[i] = (shift_right(ctx.h[shift_right(uint64(i),3)], 8* (i & 7))) & 0xFF;
     }
   }
 
@@ -212,4 +213,10 @@ contract BLAKE2b {
       }
   }
 
+function toLittleEndian(uint64 a) returns(uint64 b){
+    bytes8 temp = bytes8(a);
+    for(uint i; i < 8; i++){
+      b = uint64(b ^ (uint64(temp[i]) * (2**(0x08 * i))));
+    }
+  }
 }
