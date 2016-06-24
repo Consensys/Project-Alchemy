@@ -32,6 +32,14 @@ contract BLAKE2b {
     uint outlen; //diigest output size
   }
 
+
+  //EVENTS FOR DEBUGGING ONLY
+
+  event Init(uint64[8] h, uint64 c);
+  event PreCompress(uint64[16] v, uint64[16] m);
+  event PostCompress(uint64[16] v);
+  event Update(uint8[128] b, uint64[8] h, uint64[2] t);
+
   function G(uint64[16] v, uint a, uint b, uint c, uint d, uint64 x, uint64 y) constant { //OPTIMIZE HERE
        v[a] = v[a] + v[b] + x;
        v[d] = rotate(v[d] ^ v[a], 32);
@@ -52,6 +60,7 @@ contract BLAKE2b {
       v[i+8] = IV[i];
     }
 
+
     v[12] = v[12] ^ ctx.t[0];
     v[13] = v[13] ^ ctx.t[1];
 
@@ -60,6 +69,8 @@ contract BLAKE2b {
     for(i = 0; i <16; i++){
       m[i] = getWords(ctx.b[i]);
     }
+
+
 
     for(i=0; i<12; i++){
       G( v, 0, 4, 8, 12, m[SIGMA[i][0]], m[SIGMA[i][1]]);
@@ -71,6 +82,8 @@ contract BLAKE2b {
       G( v, 2, 7, 8, 13, m[SIGMA[i][12]], m[SIGMA[i][13]]);
       G( v, 3, 4, 9, 14, m[SIGMA[i][14]], m[SIGMA[i][15]]);
     }
+
+    PostCompress(v);
 
     for(i=0; i<8; ++i){
       ctx.h[i] = ctx.h[i] ^ v[i] ^ v[i+8];
@@ -94,7 +107,7 @@ contract BLAKE2b {
       ctx.c = 0;
 
       ctx.outlen = outlen;
-      i= key.length;
+      i = key.length;
 
       for(i = key.length; i < 128; i++){
         ctx.b[i] = 0;
@@ -104,6 +117,7 @@ contract BLAKE2b {
         update(ctx, key);
         ctx.c = 128;
       }
+      Init(ctx.h, ctx.c);
 
   }
 
@@ -121,6 +135,8 @@ contract BLAKE2b {
       }
 
       ctx.b[ctx.c++] = uint8(input[i]); //THIS NEEDS WORK________
+
+      Update(ctx.b, ctx.h, ctx.t);
     }
   }
 
