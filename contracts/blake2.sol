@@ -32,6 +32,15 @@ contract BLAKE2b {
     uint outlen; //diigest output size
   }
 
+
+  //EVENTS FOR DEBUGGING ONLY
+
+  event Init(uint64[8] h, uint64 c);
+  event PreCompress(uint64[16] v, uint64[16] m);
+  event PostCompress(uint64[16] v);
+  event Update(uint8[128] b, uint64[8] h, uint64[2] t);
+  event H(uint64[8] h);
+
   function G(uint64[16] v, uint a, uint b, uint c, uint d, uint64 x, uint64 y) constant { //OPTIMIZE HERE
        v[a] = v[a] + v[b] + x;
        v[d] = rotate(v[d] ^ v[a], 32);
@@ -47,10 +56,13 @@ contract BLAKE2b {
     uint64[16] memory v;
     uint64[16] memory m;
 
+
+
     for(uint i=0; i<8; i++){
       v[i] = ctx.h[i];
       v[i+8] = IV[i];
     }
+
 
     v[12] = v[12] ^ ctx.t[0];
     v[13] = v[13] ^ ctx.t[1];
@@ -58,8 +70,14 @@ contract BLAKE2b {
     if(last) v[14] = ~v[14];
 
     for(i = 0; i <16; i++){
-      m[i] = getWords(ctx.b[i]);
+      uint64 mi = 0;
+      for(uint j; j < 8; j++){
+        mi = mi ^ shift_left(ctx.b[i*j + j], j*8);
+      }
+      m[i] = mi;
     }
+
+    PreCompress(v,m);
 
     for(i=0; i<12; i++){
       G( v, 0, 4, 8, 12, m[SIGMA[i][0]], m[SIGMA[i][1]]);
@@ -70,11 +88,14 @@ contract BLAKE2b {
       G( v, 1, 6, 11, 12, m[SIGMA[i][10]], m[SIGMA[i][11]]);
       G( v, 2, 7, 8, 13, m[SIGMA[i][12]], m[SIGMA[i][13]]);
       G( v, 3, 4, 9, 14, m[SIGMA[i][14]], m[SIGMA[i][15]]);
+      PostCompress(v);
     }
+
 
     for(i=0; i<8; ++i){
       ctx.h[i] = ctx.h[i] ^ v[i] ^ v[i+8];
     }
+    H(ctx.h);
   }
 
   function init(BLAKE2b_ctx ctx, uint64 outlen, bytes key) private{
@@ -94,7 +115,7 @@ contract BLAKE2b {
       ctx.c = 0;
 
       ctx.outlen = outlen;
-      i= key.length;
+      i = key.length;
 
       for(i = key.length; i < 128; i++){
         ctx.b[i] = 0;
@@ -104,6 +125,7 @@ contract BLAKE2b {
         update(ctx, key);
         ctx.c = 128;
       }
+      Init(ctx.h, ctx.c);
 
   }
 
@@ -121,6 +143,8 @@ contract BLAKE2b {
       }
 
       ctx.b[ctx.c++] = uint8(input[i]); //THIS NEEDS WORK________
+
+      Update(ctx.b, ctx.h, ctx.t);
     }
   }
 
@@ -138,7 +162,8 @@ contract BLAKE2b {
 
 
     for(i=0; i< ctx.outlen/8; i++){
-      out[i] = (shift_right(ctx.h[shift_right(uint64(i),3)], 8* (i & 7))) & 0xFF;
+      out[i] = toLittleEndian(ctx.h[i]);
+      //out[i] = (shift_right(ctx.h[shift_right(uint64(i),3)], 8* (i & 7))) & 0xFF;
     }
   }
 
@@ -188,4 +213,10 @@ contract BLAKE2b {
       }
   }
 
+function toLittleEndian(uint64 a) returns(uint64 b){
+    bytes8 temp = bytes8(a);
+    for(uint i; i < 8; i++){
+      b = uint64(b ^ (uint64(temp[i]) * (2**(0x08 * i))));
+    }
+  }
 }
