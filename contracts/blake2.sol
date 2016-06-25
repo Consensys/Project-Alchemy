@@ -170,7 +170,7 @@ contract BLAKE2b {
     }
   }
 
-  function blake2b(bytes key, bytes input, uint64 outlen) constant returns(uint64[8]){
+  function blake2b(bytes input, bytes key, uint64 outlen) constant returns(uint64[8]){
     BLAKE2b_ctx memory ctx;
     uint64[8] memory out;
 
