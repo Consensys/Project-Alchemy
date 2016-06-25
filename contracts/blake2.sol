@@ -71,8 +71,8 @@ contract BLAKE2b {
 
     for(i = 0; i <16; i++){
       uint64 mi = 0;
-      for(uint j; j < 8; j++){
-        mi = mi ^ shift_left(ctx.b[i*j + j], j*8);
+      for(uint j = 0; j < 8; j++){
+        mi = mi ^ shift_left(ctx.b[i*8 + j], j*8);
       }
       m[i] = mi;
     }
@@ -142,7 +142,7 @@ contract BLAKE2b {
         ctx.c = 0;
       }
 
-      ctx.b[ctx.c++] = uint8(input[i]); //THIS NEEDS WORK________
+      ctx.b[ctx.c++] = uint8(input[i]);
 
       Update(ctx.b, ctx.h, ctx.t);
     }
@@ -163,7 +163,6 @@ contract BLAKE2b {
 
     for(i=0; i< ctx.outlen/8; i++){
       out[i] = toLittleEndian(ctx.h[i]);
-      //out[i] = (shift_right(ctx.h[shift_right(uint64(i),3)], 8* (i & 7))) & 0xFF;
     }
   }
 
