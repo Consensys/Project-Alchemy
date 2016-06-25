@@ -22,9 +22,8 @@ contract BlakeTest is Test {
       if(result[i] != trueHash[i]){
         correct = false;
       }
-
-      assertTrue(correct);
     }
+    assertTrue(correct);
   }
 
   function testLongInput(){
@@ -38,9 +37,24 @@ contract BlakeTest is Test {
       if(result[i] != trueHash[i]){
         correct = false;
       }
-
-      assertTrue(correct);
     }
+    assertTrue(correct);
+
+  }
+
+  function testShortOutput(){
+    bool correct = true;
+    uint64[8] memory result = blake.blake2b("", "abc", 20);
+    uint64[8] memory trueHash =[0x384264f676f39536,0x840523f284921cdc,
+                                0x0000000068b6846b,0x0000000000000000,
+                                0x0000000000000000,0x0000000000000000,
+                                0x0000000000000000,0x0000000000000000];
+    for(uint i; i<8; i++){
+      if(result[i] != trueHash[i]){
+        correct = false;
+      }
+    }
+    assertTrue(correct);
 
   }
 
