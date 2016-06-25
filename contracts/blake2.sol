@@ -161,8 +161,12 @@ contract BLAKE2b {
     compress(ctx,true);
 
 
-    for(i=0; i< ctx.outlen/8; i++){
+    for(i=0; i < ctx.outlen / 8; i++){
       out[i] = toLittleEndian(ctx.h[i]);
+    }
+
+    if(ctx.outlen < 64){
+      out[ctx.outlen/8] = shift_right(toLittleEndian(ctx.h[ctx.outlen/8]),64-8*(ctx.outlen%8));
     }
   }
 
