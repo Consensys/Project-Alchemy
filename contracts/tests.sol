@@ -58,4 +58,19 @@ contract BlakeTest is Test {
 
   }
 
+  function testKeyedHash(){
+    bool correct = true;
+    uint64[8] memory result = blake.blake2b("hello", "world", 32);
+    uint64[8] memory trueHash =[0x38010cfe3a8e684c,0xb17e6d049525e71d,
+                                0x4e9dc3be173fc05b,0xf5c5ca1c7e7c25e7,
+                                0x0000000000000000,0x0000000000000000,
+                                0x0000000000000000,0x0000000000000000];
+    for(uint i; i<8; i++){
+      if(result[i] != trueHash[i]){
+        correct = false;
+      }
+    }
+    assertTrue(correct);
+  }
+
 }
