@@ -1,9 +1,5 @@
-# eth-blake2
-An implementation of the BLAKE2 hash function for the Ethereum blockchain
-
-
-Designed for use in the  Equihash PoW algorithm
-
+# ZRelay
+A Zcash SPV client on Ethereum
 
 ### Tests:
 
@@ -11,6 +7,6 @@ Install Dapple
 
     npm install -g dapple
 
-Run tests 
+Run tests
 
     dapple test
