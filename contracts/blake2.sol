@@ -230,4 +230,13 @@ function toLittleEndian(uint64 a) returns(uint64 b){
       b = uint64(b ^ (uint64(temp[i]) * (2**(0x08 * i))));
     }
   }
+
+  function formatOutput(uint64[8] input) constant returns(bytes32[2]){
+    bytes32[2] memory result;
+
+    for(uint i = 0; i < 8; i++){
+        result[i/4] = result[i/4] ^ bytes32(input[i] * 2**(64*(3-i%4)));
+    }
+    return result;
+  }
 }
