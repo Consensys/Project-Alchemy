@@ -174,7 +174,7 @@ contract BLAKE2b {
     }
   }
 
-  function blake2b(bytes input, bytes key, bytes16 salt, bytes16 personalization, uint64 outlen) constant returns(uint64[8]){
+  function blake2b(bytes input, bytes key, bytes16 salt, bytes16 personalization, uint64 outlen) constant returns(uint32[2]){
     BLAKE2b_ctx memory ctx;
     uint64[8] memory out;
 
@@ -182,10 +182,10 @@ contract BLAKE2b {
     init(ctx, outlen, key, uint128(salt), uint128(personalization));
     update(ctx, input);
     finalize(ctx, out);
-    return out;
+    return formatOutput(out);
   }
 
-  function blake2b(bytes input, bytes key, uint64 outlen) constant returns (uint64[8]){
+  function blake2b(bytes input, bytes key, uint64 outlen) constant returns (uint32[2]){
     return blake2b(input, key, 0, 0, outlen);
   }
 
