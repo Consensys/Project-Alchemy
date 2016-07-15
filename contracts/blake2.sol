@@ -98,7 +98,7 @@ contract BLAKE2b {
     H(ctx.h);
   }
 
-  function init(BLAKE2b_ctx ctx, uint64 outlen, bytes key) private{
+  function init(BLAKE2b_ctx ctx, uint64 outlen, bytes key, uint128 salt, uint128 person) private{
       uint i;
 
       if(outlen == 0 || outlen > 64 || key.length > 64) throw;
@@ -108,6 +108,10 @@ contract BLAKE2b {
       }
 
       ctx.h[0] = ctx.h[0] ^ 0x01010000 ^ shift_left(uint64(key.length), 8) ^ outlen; // Set up parameter block
+      ctx.h[4] = ctx.h[4] ^ toLittleEndian(uint64(salt));
+      ctx.h[5] = ctx.h[5] ^ toLittleEndian(uint64(salt / 2**64));
+      ctx.h[6] = ctx.h[6] ^ toLittleEndian(uint64(person));
+      ctx.h[7] = ctx.h[7] ^ toLittleEndian(uint64(person / 2**64));
 
       ctx.t[0] = 0;
       ctx.t[1] = 0;
@@ -170,15 +174,19 @@ contract BLAKE2b {
     }
   }
 
-  function blake2b(bytes input, bytes key, uint64 outlen) constant returns(uint64[8]){
+  function blake2b(bytes input, bytes key, bytes16 salt, bytes16 personalization, uint64 outlen) constant returns(uint64[8]){
     BLAKE2b_ctx memory ctx;
     uint64[8] memory out;
 
 
-    init(ctx, outlen, key);
+    init(ctx, outlen, key, uint128(salt), uint128(personalization));
     update(ctx, input);
     finalize(ctx, out);
     return out;
+  }
+
+  function blake2b(bytes input, bytes key, uint64 outlen) constant returns (uint64[8]){
+    return blake2b(input, key, 0, 0, outlen);
   }
 
 // Utility functions
