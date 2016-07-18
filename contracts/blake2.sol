@@ -40,6 +40,7 @@ contract BLAKE2b {
   event PostCompress(uint64[16] v);
   event Update(uint8[128] b, uint64[8] h, uint64[2] t);
   event H(uint64[8] h);
+  event Param(uint64[8] h, uint64[2] salt);
 
   function G(uint64[16] v, uint a, uint b, uint c, uint d, uint64 x, uint64 y) constant { //OPTIMIZE HERE
        v[a] = v[a] + v[b] + x;
@@ -107,12 +108,15 @@ contract BLAKE2b {
         ctx.h[i] = IV[i];
       }
 
+      uint64[2] memory s = [toLittleEndian(uint64(salt & (2**64-1))),toLittleEndian(uint64(salt / 2**64))];
+
       ctx.h[0] = ctx.h[0] ^ 0x01010000 ^ shift_left(uint64(key.length), 8) ^ outlen; // Set up parameter block
-      ctx.h[4] = ctx.h[4] ^ toLittleEndian(uint64(salt));
+      ctx.h[4] = ctx.h[4] ^ toLittleEndian(uint64(salt & (2**64-1)));
       ctx.h[5] = ctx.h[5] ^ toLittleEndian(uint64(salt / 2**64));
-      ctx.h[6] = ctx.h[6] ^ toLittleEndian(uint64(person));
+      ctx.h[6] = ctx.h[6] ^ toLittleEndian(uint64(person & (2**64-1)));
       ctx.h[7] = ctx.h[7] ^ toLittleEndian(uint64(person / 2**64));
 
+      Param(ctx.h, s);
       ctx.t[0] = 0;
       ctx.t[1] = 0;
 
