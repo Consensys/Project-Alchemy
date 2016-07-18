@@ -59,7 +59,7 @@ contract BlakeTest is Test {
                                 0x0000000000000000,0x0000000000000000,
                                 0x0000000000000000,0x0000000000000000];
 
-    assertTrue(equals(result, trueHash));
+    assertTrue(equals(result, trueHash), bytes32(result[0]));
   }
 
   function testOutputFormatter(){
