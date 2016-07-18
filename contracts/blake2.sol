@@ -78,7 +78,7 @@ contract BLAKE2b {
       m[i] = mi;
     }
 
-    //PreCompress(v,m);
+    PreCompress(v,m);
 
     for(i=0; i<12; i++){
       G( v, 0, 4, 8, 12, m[SIGMA[i][0]], m[SIGMA[i][1]]);
@@ -89,14 +89,14 @@ contract BLAKE2b {
       G( v, 1, 6, 11, 12, m[SIGMA[i][10]], m[SIGMA[i][11]]);
       G( v, 2, 7, 8, 13, m[SIGMA[i][12]], m[SIGMA[i][13]]);
       G( v, 3, 4, 9, 14, m[SIGMA[i][14]], m[SIGMA[i][15]]);
-      //PostCompress(v);
+      PostCompress(v);
     }
 
 
     for(i=0; i<8; ++i){
       ctx.h[i] = ctx.h[i] ^ v[i] ^ v[i+8];
     }
-    //H(ctx.h);
+    H(ctx.h);
   }
 
   function init(BLAKE2b_ctx ctx, uint64 outlen, bytes key, uint64[2] salt, uint64[2] person) private{
@@ -131,7 +131,7 @@ contract BLAKE2b {
         update(ctx, key);
         ctx.c = 128;
       }
-      //Init(ctx.h, ctx.c);
+      Init(ctx.h, ctx.c);
 
   }
 
@@ -150,7 +150,7 @@ contract BLAKE2b {
 
       ctx.b[ctx.c++] = uint8(input[i]);
 
-      //Update(ctx.b, ctx.h, ctx.t);
+      Update(ctx.b, ctx.h, ctx.t);
     }
   }
 
