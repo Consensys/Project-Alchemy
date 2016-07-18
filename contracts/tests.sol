@@ -56,6 +56,16 @@ contract BlakeTest is Test, EventDefinitions {
     assertTrue(equals(result, trueHash));
   }
 
+  function testPersonalization(){
+    uint64[8] memory result = blake.blake2b("hello world", "", "This is a salt", "ZcashPoW", 16);
+    uint64[8] memory trueHash =[0xf5777402bb566668,0xe12a1399014d4724,
+                                0x0000000000000000,0x0000000000000000,
+                                0x0000000000000000,0x0000000000000000,
+                                0x0000000000000000,0x0000000000000000];
+
+    assertTrue(equals(result, trueHash), bytes32(result[0]));
+  }
+
   function testSaltedHash(){
     uint64[8] memory result = blake.blake2b("hello world", "", "This is a salt", "", 32);
     uint64[8] memory trueHash =[0x7d6bd0ad9213190a,0xef28530c87359f3a,
