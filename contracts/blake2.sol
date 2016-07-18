@@ -86,7 +86,7 @@ contract BLAKE2b {
     }
   }
 
-  function init(BLAKE2b_ctx ctx, uint64 outlen, bytes key) private{
+  function init(BLAKE2b_ctx ctx, uint64 outlen, bytes key, uint64[2] salt, uint64[2] person) private{
       uint i;
 
       if(outlen == 0 || outlen > 64 || key.length > 64) throw;
@@ -96,6 +96,10 @@ contract BLAKE2b {
       }
 
       ctx.h[0] = ctx.h[0] ^ 0x01010000 ^ shift_left(uint64(key.length), 8) ^ outlen; // Set up parameter block
+      ctx.h[4] = ctx.h[4] ^ salt[0];
+      ctx.h[5] = ctx.h[5] ^ salt[1];
+      ctx.h[6] = ctx.h[6] ^ person[0];
+      ctx.h[7] = ctx.h[7] ^ person[1];
 
       ctx.t[0] = 0;
       ctx.t[1] = 0;
@@ -156,15 +160,19 @@ contract BLAKE2b {
     }
   }
 
-  function blake2b(bytes input, bytes key, uint64 outlen) constant returns(uint64[8]){
+  function blake2b(bytes input, bytes key, bytes salt, bytes personalization, uint64 outlen) constant public returns(uint64[8]){
     BLAKE2b_ctx memory ctx;
     uint64[8] memory out;
 
 
-    init(ctx, outlen, key);
+    init(ctx, outlen, key, formatInput(salt), formatInput(personalization));
     update(ctx, input);
     finalize(ctx, out);
     return out;
+  }
+
+  function blake2b(bytes input, bytes key, uint64 outlen) constant returns (uint64[8]){
+    return blake2b(input, key, "", "", outlen);
   }
 
 // Utility functions
@@ -207,5 +215,23 @@ function toLittleEndian(uint64 a) returns(uint64 b){
     for(uint i; i < 8; i++){
       b = uint64(b ^ (uint64(temp[i]) * (2**(0x08 * i))));
     }
+  }
+
+  function formatInput(bytes input) constant returns (uint64[2] output){
+    for(uint i = 0; i<input.length; i++){
+        output[i/8] = output[i/8] ^ shift_left(uint64(input[i]), 64-8*(i%8+1));
+    }
+    for(i = 0; i<2; i++){
+        output[i] = toLittleEndian(output[i]);
+    }
+  }
+
+  function formatOutput(uint64[8] input) constant returns(bytes32[2]){
+    bytes32[2] memory result;
+
+    for(uint i = 0; i < 8; i++){
+        result[i/4] = result[i/4] ^ bytes32(input[i] * 2**(64*(3-i%4)));
+    }
+    return result;
   }
 }
