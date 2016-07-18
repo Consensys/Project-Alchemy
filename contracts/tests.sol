@@ -1,7 +1,11 @@
 import "./blake2.sol";
 import "dapple/test.sol";
 
-contract BlakeTest is Test {
+contract EventDefinitions {
+  event Param(uint64[8] h, uint64[2] salt);
+}
+
+contract BlakeTest is Test, EventDefinitions {
   BLAKE2b blake;
   Tester tester;
 
@@ -54,8 +58,8 @@ contract BlakeTest is Test {
 
   function testSaltedHash(){
     uint64[8] memory result = blake.blake2b("hello world", "", "This is a salt", "", 32);
-    uint64[8] memory trueHash =[0xa6d6c8b9fe87123a,0x9da318786050a1b0,
-                                0x7f2f2c23e8e7cd7a,0xe03cfa6a6cb67851,
+    uint64[8] memory trueHash =[0x7d6bd0ad9213190a,0xef28530c87359f3a,
+                                0x1a7cd77c22828ba8,0x916784d56b576e67,
                                 0x0000000000000000,0x0000000000000000,
                                 0x0000000000000000,0x0000000000000000];
 
@@ -74,6 +78,14 @@ contract BlakeTest is Test {
     bytes32[2] memory result = blake.formatOutput(out);
 
     assertTrue(result[0] == formatted[0] && result[1] == formatted[1], result[0]);
+  }
+
+  function testEventParams(){
+    expectEventsExact(blake);
+    uint64[8] memory h = [0x6a09e667f2bdc948, 0xbb67ae8584caa73b, 0x3c6ef372fe94f82b, 0xa54ff53a5f1d36f1, 0x731fad91702a397b, 0x9b05688c4d6b282c, 0x1f83d9abfb41bd6b, 0x5be0cd19137e2179];
+    uint64[2] memory salt = [0x2211ffeeddccbbaa,0x66554433];
+    Param(h, salt);
+    blake.blake2b("abc","","\xaa\xbb\xcc\xdd\xee\xff\x11\x22\x33\x44\x55\x66","",64);
   }
 
   function equals(uint64[8] a, uint64[8] b) constant returns(bool){

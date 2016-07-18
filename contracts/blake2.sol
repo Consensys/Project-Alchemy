@@ -78,7 +78,7 @@ contract BLAKE2b {
       m[i] = mi;
     }
 
-    PreCompress(v,m);
+    //PreCompress(v,m);
 
     for(i=0; i<12; i++){
       G( v, 0, 4, 8, 12, m[SIGMA[i][0]], m[SIGMA[i][1]]);
@@ -89,17 +89,17 @@ contract BLAKE2b {
       G( v, 1, 6, 11, 12, m[SIGMA[i][10]], m[SIGMA[i][11]]);
       G( v, 2, 7, 8, 13, m[SIGMA[i][12]], m[SIGMA[i][13]]);
       G( v, 3, 4, 9, 14, m[SIGMA[i][14]], m[SIGMA[i][15]]);
-      PostCompress(v);
+      //PostCompress(v);
     }
 
 
     for(i=0; i<8; ++i){
       ctx.h[i] = ctx.h[i] ^ v[i] ^ v[i+8];
     }
-    H(ctx.h);
+    //H(ctx.h);
   }
 
-  function init(BLAKE2b_ctx ctx, uint64 outlen, bytes key, uint128 salt, uint128 person) private{
+  function init(BLAKE2b_ctx ctx, uint64 outlen, bytes key, uint64[2] salt, uint64[2] person) private{
       uint i;
 
       if(outlen == 0 || outlen > 64 || key.length > 64) throw;
@@ -108,15 +108,13 @@ contract BLAKE2b {
         ctx.h[i] = IV[i];
       }
 
-      uint64[2] memory s = [toLittleEndian(uint64(salt & (2**64-1))),toLittleEndian(uint64(salt / 2**64))];
-
       ctx.h[0] = ctx.h[0] ^ 0x01010000 ^ shift_left(uint64(key.length), 8) ^ outlen; // Set up parameter block
-      ctx.h[4] = ctx.h[4] ^ toLittleEndian(uint64(salt & (2**64-1)));
-      ctx.h[5] = ctx.h[5] ^ toLittleEndian(uint64(salt / 2**64));
-      ctx.h[6] = ctx.h[6] ^ toLittleEndian(uint64(person & (2**64-1)));
-      ctx.h[7] = ctx.h[7] ^ toLittleEndian(uint64(person / 2**64));
+      ctx.h[4] = ctx.h[4] ^ salt[0];
+      ctx.h[5] = ctx.h[5] ^ salt[1];
+      ctx.h[6] = ctx.h[6] ^ person[0];
+      ctx.h[7] = ctx.h[7] ^ person[1];
 
-      Param(ctx.h, s);
+      Param(ctx.h, salt);
       ctx.t[0] = 0;
       ctx.t[1] = 0;
 
@@ -133,7 +131,7 @@ contract BLAKE2b {
         update(ctx, key);
         ctx.c = 128;
       }
-      Init(ctx.h, ctx.c);
+      //Init(ctx.h, ctx.c);
 
   }
 
@@ -152,7 +150,7 @@ contract BLAKE2b {
 
       ctx.b[ctx.c++] = uint8(input[i]);
 
-      Update(ctx.b, ctx.h, ctx.t);
+      //Update(ctx.b, ctx.h, ctx.t);
     }
   }
 
@@ -178,19 +176,19 @@ contract BLAKE2b {
     }
   }
 
-  function blake2b(bytes input, bytes key, bytes16 salt, bytes16 personalization, uint64 outlen) constant returns(uint64[8]){
+  function blake2b(bytes input, bytes key, bytes salt, bytes personalization, uint64 outlen) constant public returns(uint64[8]){
     BLAKE2b_ctx memory ctx;
     uint64[8] memory out;
 
 
-    init(ctx, outlen, key, uint128(salt), uint128(personalization));
+    init(ctx, outlen, key, formatInput(salt), formatInput(personalization));
     update(ctx, input);
     finalize(ctx, out);
     return out;
   }
 
   function blake2b(bytes input, bytes key, uint64 outlen) constant returns (uint64[8]){
-    return blake2b(input, key, 0, 0, outlen);
+    return blake2b(input, key, "", "", outlen);
   }
 
 // Utility functions
@@ -232,6 +230,15 @@ function toLittleEndian(uint64 a) returns(uint64 b){
     bytes8 temp = bytes8(a);
     for(uint i; i < 8; i++){
       b = uint64(b ^ (uint64(temp[i]) * (2**(0x08 * i))));
+    }
+  }
+
+  function formatInput(bytes input) constant returns (uint64[2] output){
+    for(uint i = 0; i<input.length; i++){
+        output[i/8] = output[i/8] ^ shift_left(uint64(input[i]), 64-8*(i%8+1));
+    }
+    for(i = 0; i<2; i++){
+        output[i] = toLittleEndian(output[i]);
     }
   }
 
