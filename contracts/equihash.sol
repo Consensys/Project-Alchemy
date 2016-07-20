@@ -2,9 +2,9 @@ import "./blake2.sol";
 import "./StepRowLib.sol";
 contract EquihashValidator is BLAKE2b{
 
-    uint constant n;
-    uint constant k;
-    uint constant d;
+    uint constant n = 96;
+    uint constant k = 3;
+    uint constant d = 0;
 
 
     function EquihashValidator(){
@@ -30,7 +30,7 @@ contract EquihashValidator is BLAKE2b{
       update(state, soln);
     }
 
-    function validate(uint32 n, uint32 k, bytes I, uint nonce, uint32[] soln) returns (bool){
+    function validate(bytes I, uint nonce, uint32[] soln) returns (bool){
       BLAKE2b_ctx memory state;
 
       initializeState(state);
