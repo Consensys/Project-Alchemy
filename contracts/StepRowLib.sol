@@ -23,6 +23,21 @@ library StepRowLib {
     return self;
   }
 
+  function IndicesBefore(StepRow self, StepRow a){
+    return self.indices[0] < a.indices[0];
+  }
+
+  function TrimHash(StepRow self, uint l){
+    bytes memory p;
+
+    for(uint i = 0; i< self.len-l; i++){
+      p.push(self.hash[i+1]);
+    }
+
+    self.hash = p;
+    self.len -=l;
+  }
+
   function XOR(StepRow self, StepRow a) returns (StepRow){
     if(self.len != a.len) throw;
     if(a.indices.length != self.indices.length) throw;

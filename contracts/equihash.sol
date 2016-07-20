@@ -39,14 +39,11 @@ contract EquihashValidator is BLAKE2b{
 
       if(soln.length != soln_size) return false;
 
-      StepRow[] X;
+      StepRowLib.StepRow[] X;
 
       for(uint i=0; i< soln.length; i++){
-        X.push(newStepRow(n, state, i));
+        X.push(StepRowLib.StepRow(n, state, i));
       }
-
-      uint hashLen = n/8;
-      uint lenIndecies = ?;
 
       while(X.length > 1){
         StepRow[] Xc;
@@ -54,19 +51,22 @@ contract EquihashValidator is BLAKE2b{
         for(i=0; i< X.length; i+=2){
           if(!HasCollision(X[i],X[i+1], CollisionByteLength)) return false;
 
-          if(IndicesBefore(X[i],X[i+1])) return false;
+          if(X[i+1].IndicesBefore(X[i])) return false;
 
           if(!DistinctIndices(X[i+1, X[i]])) return false;
 
-          Xc.push(newStepRow(X[i], X[i+1], CollisionByteLength));
+          Xc.push(X[i].XOR(X[i+1]));
+          Xc[Xc.length-1].TrimHash(CollisionByteLength());
         }
 
         X = Xc;
-        hashLen -= CollisionByteLength;
-        lenIndecies = lenIndecies*2;
       }
 
       return isZero(X[0],hashLen);
+    }
+
+    function CollisionByteLength() constant returns (uint){
+      return (n/(k+1))/8;
     }
 
 }
