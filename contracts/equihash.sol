@@ -1,20 +1,16 @@
 import "./blake2.sol";
-
+import "./StepRowLib.sol";
 contract EquihashValidator is BLAKE2b{
 
     uint constant n;
     uint constant k;
     uint constant d;
 
-    struct StepRow{
-      bytes hash;
-    }
 
     function EquihashValidator(){
 
     }
 
-    function newStepRow(uint n, BLAKE2b_ctx state, uint i);
 
     function initializeState(BLAKE2b_ctx state, uint32 N, uint32 K, uint32[] soln){
       bytes4 N = bytes4(toLittleEndian(uint64(n)));
@@ -58,11 +54,11 @@ contract EquihashValidator is BLAKE2b{
         for(i=0; i< X.length; i+=2){
           if(!HasCollision(X[i],X[i+1], CollisionByteLength)) return false;
 
-          if(IndicesBefore(X[i],X[i+1], hashLen,lenIndecies)) return false;
+          if(IndicesBefore(X[i],X[i+1])) return false;
 
-          if(!DistinctIndices(X[i],X[i+1], hashLen,lenIndecies)) return false;
+          if(!DistinctIndices(X[i+1, X[i]])) return false;
 
-          Xc.push(newStepRow(X[i], X[i+1], hashLen, lenIndecies, CollisionByteLength));
+          Xc.push(newStepRow(X[i], X[i+1], CollisionByteLength));
         }
 
         X = Xc;
