@@ -2,13 +2,15 @@ import "./blake2.sol";
 import "./StepRowLib.sol";
 contract EquihashValidator is BLAKE2b{
 
-    uint constant n = 96;
-    uint constant k = 3;
-    uint constant d = 0;
+    uint public n = 96;
+    uint public k = 5;
+    uint public d = 0;
 
 
-    function EquihashValidator(){
-
+    function EquihashValidator(uint _n, uint _k, uint _d){
+      n = _n;
+      k = _k;
+      d = _d;
     }
 
 
