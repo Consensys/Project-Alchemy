@@ -4,7 +4,7 @@ import "dapple/test.sol";
 contract EquihashTest is Test {
 
   EquihashValidator equi;
-  Tester test;
+  Tester tester;
 
   function EquihashTest(){
     equi = new EquihashValidator(96, 5, 0);
@@ -19,9 +19,13 @@ contract EquihashTest is Test {
   function testEquihashValidator(){
     bytes memory seed = "Equihash is an asymmetric PoW based on the Generalised Birthday problem.";
     uint nonce = 1;
-    uint32[] memory soln = [2154, 87055, 7922, 12920, 45189, 49783, 122795, 124296, 2432, 48178, 48280, 67880, 3912, 62307, 10987, 93891, 19673, 24483, 33984, 91500, 38171, 85505, 94625, 106140, 31530, 60861, 59391, 117337, 68078, 129665, 126764, 128278];
+    uint32[32] memory soln = [uint32(2154), uint32(87055), uint32(7922), uint32(12920), uint32(45189), uint32(49783), uint32(122795), uint32(124296), uint32(2432), uint32(48178), uint32(48280), uint32(67880), uint32(3912), uint32(62307), uint32(10987), uint32(93891), uint32(19673), uint32(24483), uint32(33984), uint32(91500), uint32(38171), uint32(85505), uint32(94625), uint32(106140), uint32(31530), uint32(60861), uint32(59391), uint32(117337), uint32(68078), uint32(129665), uint32(126764), uint32(128278)];
+    uint32[] memory s;
+    for(uint i=0; i<32; i++){
+      s[i] = soln[i];
+    }
     bool correct = true;
-    bool valid = equi.validate(seed, nonce, soln);
+    bool valid = equi.validate(seed, nonce, s);
 
     assertTrue(correct==valid);
   }

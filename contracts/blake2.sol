@@ -86,7 +86,7 @@ contract BLAKE2b {
     }
   }
 
-  function init(BLAKE2b_ctx ctx, uint64 outlen, bytes key, uint64[2] salt, uint64[2] person) private{
+  function init(BLAKE2b_ctx ctx, uint64 outlen, bytes key, uint64[2] salt, uint64[2] person) internal {
       uint i;
 
       if(outlen == 0 || outlen > 64 || key.length > 64) throw;
@@ -120,7 +120,7 @@ contract BLAKE2b {
 
   }
 
-  function update(BLAKE2b_ctx ctx, bytes input) private {
+  function update(BLAKE2b_ctx ctx, bytes input) internal {
     uint i;
 
     for(i = 0; i < input.length; i++){
@@ -138,7 +138,7 @@ contract BLAKE2b {
     }
   }
 
-  function finalize(BLAKE2b_ctx ctx, uint64[8] out) private {
+  function finalize(BLAKE2b_ctx ctx, uint64[8] out) internal {
     uint i;
 
     ctx.t[0] += ctx.c;

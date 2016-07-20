@@ -1,15 +1,15 @@
 import "./blake2.sol";
 
 library StepRowLib {
-  uint32 constant n;
-  uint32 constant k;
+  uint32 constant n = 96;
+  uint32 constant k = 5;
   struct StepRow{
     bytes hash; //Statically sized, use static types once n is defined
     uint len;
     uint32[] indices;
   }
 
-  function StepRow(uint n, BLAKE2b.BLAKE2b_ctx state, uint32 i) returns(StepRow){
+  function newStepRow(uint n, BLAKE2b.BLAKE2b_ctx state, uint32 i) returns(StepRow){
     StepRow memory self;
     bytes person = "ZCashPOW";
     /*
@@ -18,7 +18,7 @@ library StepRowLib {
 
     self.len = n/8;
     self.indices.push(i);
-    self.hash = BLAKE2b.blake2b(i, "", "", person, n/8)
+    self.hash = BLAKE2b.blake2b(i, "", "", person, n/8);
 
     return self;
   }
@@ -68,15 +68,16 @@ library StepRowLib {
   }
 
   function DistinctIndicies(StepRow a, StepRow b) returns (bool){ //TODO: clarify what this does
+/*
     mapping(uint32 => bool) memory indices;
     for(uint i=0; i< a.indices.length; i++){
       indices[i] = true;
     }
 
-    for(i =0; i < b.indices.length){
+    for(i =0; i < b.indices.length; i++){
       if(indices[b.indices[i]]) return false;
     }
-
+*/
     return true;
   }
 

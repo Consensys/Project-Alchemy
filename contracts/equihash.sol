@@ -14,7 +14,7 @@ contract EquihashValidator is BLAKE2b{
     }
 
 
-    function initializeState(BLAKE2b_ctx state, uint32 N, uint32 K, uint32[] soln){
+    function initializeState(BLAKE2b_ctx state, uint32[] soln, bytes I){
       bytes4 N = bytes4(toLittleEndian(uint64(n)));
       bytes4 K = bytes4(toLittleEndian(uint64(k)));
 
@@ -26,7 +26,7 @@ contract EquihashValidator is BLAKE2b{
         personalization.push(K[i]);
       }
 
-      init(state, N/8, "", "", formatInput(personalization));
+      init(state, N/8, "", formatInput(""), formatInput(personalization));
 
       update(state, I);
       update(state, soln);
@@ -35,27 +35,27 @@ contract EquihashValidator is BLAKE2b{
     function validate(bytes I, uint nonce, uint32[] soln) returns (bool){
       BLAKE2b_ctx memory state;
 
-      initializeState(state);
+      initializeState(state, soln, I);
 
-      uint soln_size = 2**K;
+      uint soln_size = 2**k;
 
       if(soln.length != soln_size) return false;
 
       StepRowLib.StepRow[] X;
 
       for(uint i=0; i< soln.length; i++){
-        X.push(StepRowLib.StepRow(n, state, i));
+        X.push(StepRowLib.newStepRow(n, state, i));
       }
 
       while(X.length > 1){
-        StepRow[] Xc;
+        StepRowLib.StepRow[] Xc;
 
         for(i=0; i< X.length; i+=2){
-          if(!HasCollision(X[i],X[i+1], CollisionByteLength)) return false;
+          if(!StepRowLib.HasCollision(X[i],X[i+1], CollisionByteLength)) return false;
 
           if(X[i+1].IndicesBefore(X[i])) return false;
 
-          if(!DistinctIndices(X[i+1, X[i]])) return false;
+          if(!StepRowLib.DistinctIndices(X[i+1], X[i])) return false;
 
           Xc.push(X[i].XOR(X[i+1]));
           Xc[Xc.length-1].TrimHash(CollisionByteLength());
@@ -64,7 +64,7 @@ contract EquihashValidator is BLAKE2b{
         X = Xc;
       }
 
-      return isZero(X[0],hashLen);
+      return X[0].isZero();
     }
 
     function CollisionByteLength() constant returns (uint){
