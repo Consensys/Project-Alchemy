@@ -34,7 +34,7 @@ contract BLAKE2b is GasTest{
     uint outlen; //diigest output size
   }
 
-  function G(uint64[16] v, uint a, uint b, uint c, uint d, uint64 x, uint64 y) constant { //OPTIMIZE HERE
+  function G(uint64[16] v, uint a, uint b, uint c, uint d, uint64 x, uint64 y) constant { //OPTIMISE HERE
        Log("G start");
        v[a] = v[a] + v[b] + x;
        v[d] = rotate(v[d] ^ v[a], 32);
@@ -64,7 +64,7 @@ contract BLAKE2b is GasTest{
 
     if(last) v[14] = ~v[14];
 
-    for(i = 0; i <16; i++){
+    for(i = 0; i <16; i++){ //OPTIMISE
       uint64 mi = 0;
       for(uint j = 0; j < 8; j++){
         mi = mi ^ shift_left(ctx.b[i*8 + j], j*8);
@@ -124,11 +124,11 @@ contract BLAKE2b is GasTest{
       i = key.length;
 
       Log("Set up parameters");
-
+/*
       for(i = key.length; i < 128; i++){
         ctx.b[i] = 0;
       }
-
+*/
       Log("Fill buffer");
 
       if(key.length > 0){
