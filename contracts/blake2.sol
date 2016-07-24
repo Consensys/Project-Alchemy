@@ -154,7 +154,7 @@ contract BLAKE2b is GasTest{
       }
 
       ctx.b[ctx.c++] = uint8(input[i]);
-
+      Log("Buffer refilled");
     }
   }
 
@@ -164,20 +164,27 @@ contract BLAKE2b is GasTest{
     ctx.t[0] += ctx.c;
     if(ctx.t[0] < ctx.c) ctx.t[1]++;
 
+    Log("Finalize: increment counters");
+
     while(ctx.c < 128){
       ctx.b[ctx.c++] = 0;
     }
 
+    Log("Finalize: empty buffer");
+
     compress(ctx,true);
 
-
+    Log("Finalize: compress");
     for(i=0; i < ctx.outlen / 8; i++){
       out[i] = toLittleEndian(ctx.h[i]);
     }
 
+
     if(ctx.outlen < 64){
       out[ctx.outlen/8] = shift_right(toLittleEndian(ctx.h[ctx.outlen/8]),64-8*(ctx.outlen%8));
     }
+
+    Log("Format output");
   }
 
   function blake2b(bytes input, bytes key, bytes salt, bytes personalization, uint64 outlen) constant public returns(uint64[8]){

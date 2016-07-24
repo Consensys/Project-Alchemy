@@ -3,11 +3,13 @@ import "dapple/test.sol";
 
 contract EventDefinitions {
   event Param(uint64[8] h, uint64[2] salt);
+  event ReportGas(uint g);
 }
 
 contract BlakeTest is Test, EventDefinitions, GasTest {
   BLAKE2b blake;
   Tester tester;
+  uint startGas;
 
   function setUp(){
     blake = new BLAKE2b();
@@ -16,28 +18,48 @@ contract BlakeTest is Test, EventDefinitions, GasTest {
   }
 
   function testFinalHash(){
+    startGas = msg.gas;
     uint64[8] memory result = blake.blake2b("abc", "", 64);
+    ReportGas(startGas-msg.gas);
+
     uint64[8] memory trueHash = [0xba80a53f981c4d0d,0x6a2797b69f12f6e9,
                                 0x4c212f14685ac4b7,0x4b12bb6fdbffa2d1,
                                 0x7d87c5392aab792d,0xc252d5de4533cc95,
                                 0x18d38aa8dbf1925a,0xb92386edd4009923];
 
     assertTrue(equals(result, trueHash));
+
   }
 
   function testLongInput(){
+    startGas = msg.gas;
     uint64[8] memory result = blake.blake2b("The quick brown fox jumped over the lazy dog.", "", 64);
-    uint64[8] memory trueHash =[0x054b087096f9a555,0x3a09a8419cfd16db,
-                                0x872805a31dd518be,0x12534d03749edb2a,
-                                0x09da6731b89b5f71,0x38fcedc93cbf7536,
-                                0x8db91378930e94c3,0xccc65e829b0aa349];
+    ReportGas(startGas-msg.gas);
+    uint64[8] memory trueHash = [0x054b087096f9a555,0x3a09a8419cfd16db,
+                                 0x872805a31dd518be,0x12534d03749edb2a,
+                                 0x09da6731b89b5f71,0x38fcedc93cbf7536,
+                                 0x8db91378930e94c3,0xccc65e829b0aa349];
 
     assertTrue(equals(result, trueHash));
 
   }
 
+  function test256ByteInput(){
+    startGas = msg.gas;
+    uint64[8] memory result = blake.blake2b("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis a ornare ligula. In finibus justo erat, eu tristique lacus nullam","","","",64);
+    ReportGas(startGas-msg.gas);
+    uint64[8] memory trueHash = [0x43c111a9341fb609,0x185d4e93afaf43b6,
+                                 0x4fd494647231c452,0x4d5ea1f8535cc7e0,
+                                 0x59adb2896939e9e4,0x48d6d6c7de06090d,
+                                 0xb225d13e6174c132,0xa639848c2148563c];
+
+     assertTrue(equals(result, trueHash),bytes32(result[0]));
+  }
+
   function testShortOutput(){
+    startGas = msg.gas;
     uint64[8] memory result = blake.blake2b("abc", "", 20);
+    ReportGas(startGas-msg.gas);
     uint64[8] memory trueHash =[0x384264f676f39536,0x840523f284921cdc,
                                 0x0000000068b6846b,0x0000000000000000,
                                 0x0000000000000000,0x0000000000000000,
@@ -47,33 +69,42 @@ contract BlakeTest is Test, EventDefinitions, GasTest {
   }
 
   function testKeyedHash(){
+    startGas = msg.gas;
     uint64[8] memory result = blake.blake2b("hello", "world", 32);
+    ReportGas(startGas-msg.gas);
     uint64[8] memory trueHash =[0x38010cfe3a8e684c,0xb17e6d049525e71d,
                                 0x4e9dc3be173fc05b,0xf5c5ca1c7e7c25e7,
                                 0x0000000000000000,0x0000000000000000,
                                 0x0000000000000000,0x0000000000000000];
 
     assertTrue(equals(result, trueHash));
+    ReportGas(startGas-msg.gas);
   }
 
   function testPersonalization(){
+    startGas = msg.gas;
     uint64[8] memory result = blake.blake2b("hello world", "", "This is a salt", "ZcashPoW", 16);
+    ReportGas(startGas-msg.gas);
     uint64[8] memory trueHash =[0xf5777402bb566668,0xe12a1399014d4724,
                                 0x0000000000000000,0x0000000000000000,
                                 0x0000000000000000,0x0000000000000000,
                                 0x0000000000000000,0x0000000000000000];
 
     assertTrue(equals(result, trueHash), bytes32(result[0]));
+    ReportGas(startGas-msg.gas);
   }
 
   function testSaltedHash(){
+    startGas = msg.gas;
     uint64[8] memory result = blake.blake2b("hello world", "", "This is a salt", "", 32);
+    ReportGas(startGas-msg.gas);
     uint64[8] memory trueHash =[0x7d6bd0ad9213190a,0xef28530c87359f3a,
                                 0x1a7cd77c22828ba8,0x916784d56b576e67,
                                 0x0000000000000000,0x0000000000000000,
                                 0x0000000000000000,0x0000000000000000];
 
     assertTrue(equals(result, trueHash), bytes32(result[0]));
+    ReportGas(startGas-msg.gas);
   }
 
   function testOutputFormatter(){
