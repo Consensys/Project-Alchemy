@@ -5,7 +5,7 @@ contract EventDefinitions {
   event Param(uint64[8] h, uint64[2] salt);
 }
 
-contract BlakeTest is Test, EventDefinitions {
+contract BlakeTest is Test, EventDefinitions, GasTest {
   BLAKE2b blake;
   Tester tester;
 
