@@ -44,7 +44,6 @@ contract BLAKE2b is GasTest{
        v[d] = rotate(v[d] ^ v[a], 16);
        v[c] = v[c] + v[d];
        v[b] = rotate(v[b] ^ v[c], 63);
-       Log("G End");
   }
 
   function compress(BLAKE2b_ctx ctx, bool last) private {
@@ -97,6 +96,8 @@ contract BLAKE2b is GasTest{
 
   function init(BLAKE2b_ctx ctx, uint64 outlen, bytes key, uint64[2] salt, uint64[2] person) private{
       Log("Begin init");
+      Log("Test Calib 123456789");
+      Log("Test Calib 234567");
 
       uint i;
 
