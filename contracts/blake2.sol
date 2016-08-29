@@ -27,15 +27,16 @@ contract BLAKE2b is GasTest{
 
 
   struct BLAKE2b_ctx {
-    uint8[128] b; //input buffer
+    uint256[4] b; //input buffer
     uint64[8] h;  //chained state
-    uint64[2] t; //total bytes
+    uint128 t; //total bytes
     uint64 c; //Size of b
     uint outlen; //diigest output size
   }
 
-  function G(uint64[16] v, uint a, uint b, uint c, uint d, uint64 x, uint64 y) constant { //OPTIMISE HERE
-       Log("G start");
+
+  function G(uint64[16] v, uint a, uint b, uint c, uint d, uint64 x, uint64 y) constant { //OPTIMIZE HERE
+       //Log("G start");
        v[a] = v[a] + v[b] + x;
        v[d] = rotate(v[d] ^ v[a], 32);
        v[c] = v[c] + v[d];
@@ -47,7 +48,7 @@ contract BLAKE2b is GasTest{
   }
 
   function compress(BLAKE2b_ctx ctx, bool last) private {
-    Log("Begin Compress");
+    //Log("Begin Compress");
     uint64[16] memory v;
     uint64[16] memory m;
 
@@ -59,20 +60,20 @@ contract BLAKE2b is GasTest{
     }
 
 
-    v[12] = v[12] ^ ctx.t[0];
-    v[13] = v[13] ^ ctx.t[1];
+    v[12] = v[12] ^ uint64(ctx.t % 2**64);
+    v[13] = v[13] ^ uint64(ctx.t / 2**64);
 
     if(last) v[14] = ~v[14];
 
     for(i = 0; i <16; i++){ //OPTIMISE
       uint64 mi = 0;
       for(uint j = 0; j < 8; j++){
-        mi = mi ^ shift_left(ctx.b[i*8 + j], j*8);
+        mi = mi ^ shift_left(get8(ctx.b, i*8 + j), j*8);
       }
       m[i] = mi;
     }
 
-    Log("Compress: Begin G");
+    //Log("Compress: Begin G");
     for(i=0; i<12; i++){
       G( v, 0, 4, 8, 12, m[SIGMA[i][0]], m[SIGMA[i][1]]);
       G( v, 1, 5, 9, 13, m[SIGMA[i][2]], m[SIGMA[i][3]]);
@@ -84,20 +85,20 @@ contract BLAKE2b is GasTest{
       G( v, 3, 4, 9, 14, m[SIGMA[i][14]], m[SIGMA[i][15]]);
     }
 
-    Log("Compress: End G");
+    //Log("Compress: End G");
 
 
     for(i=0; i<8; ++i){
       ctx.h[i] = ctx.h[i] ^ v[i] ^ v[i+8];
     }
 
-    Log("End Compress");
+    //Log("End Compress");
   }
 
   function init(BLAKE2b_ctx ctx, uint64 outlen, bytes key, uint64[2] salt, uint64[2] person) private{
-      Log("Begin init");
-      Log("Test Calib 123456789");
-      Log("Test Calib 234567");
+      //Log("Begin init");
+      //Log("Test Calib 123456789");
+      //Log("Test Calib 234567");
 
       uint i;
 
@@ -107,7 +108,7 @@ contract BLAKE2b is GasTest{
         ctx.h[i] = IV[i];
       }
 
-      Log("Copied IV");
+      //Log("Copied IV");
 
       ctx.h[0] = ctx.h[0] ^ 0x01010000 ^ shift_left(uint64(key.length), 8) ^ outlen; // Set up parameter block
       ctx.h[4] = ctx.h[4] ^ salt[0];
@@ -115,66 +116,69 @@ contract BLAKE2b is GasTest{
       ctx.h[6] = ctx.h[6] ^ person[0];
       ctx.h[7] = ctx.h[7] ^ person[1];
 
-      ctx.t[0] = 0;
-      ctx.t[1] = 0;
+      //ctx.t[0] = 0;
+      //ctx.t[1] = 0;
 
-      ctx.c = 0;
+      //ctx.c = 0;
 
       ctx.outlen = outlen;
       i = key.length;
 
-      Log("Set up parameters");
-/*
-      for(i = key.length; i < 128; i++){
-        ctx.b[i] = 0;
-      }
-*/
-      Log("Fill buffer");
+      //Log("Set up parameters");
+
+  //    for(i = key.length; i < 128; i++){
+  //      ctx.b[i] = 0;
+  //    }
+
+      //Log("Fill buffer");
+
 
       if(key.length > 0){
         update(ctx, key);
         ctx.c = 128;
       }
 
-      Log("Add key");
+      //Log("Add key");
 
   }
 
-  function update(BLAKE2b_ctx ctx, bytes input) private {
+  function update(BLAKE2b_ctx ctx, bytes input) private { //This can be much more efficient
     uint i;
 
     for(i = 0; i < input.length; i++){
       if(ctx.c == 128){   //buffer full?
-        ctx.t[0] += ctx.c; //add counters
-        if(ctx.t[0] < ctx.c){ //overflow?
-          ctx.t[1] ++; //carry to high word
-        }
+        ctx.t += ctx.c; //add counters
+//        if(ctx.t[0] < ctx.c){ //overflow?
+//          ctx.t[1] ++; //carry to high word
+//        }
         compress(ctx, false);
         ctx.c = 0;
+        delete ctx.b;
       }
 
-      ctx.b[ctx.c++] = uint8(input[i]);
-      Log("Buffer refilled");
+      set8(ctx.b, uint8(input[i]), ctx.c++);
+      //ctx.b[ctx.c++] = uint8(input[i]);
+      //Log("Buffer refilled");
     }
   }
 
   function finalize(BLAKE2b_ctx ctx, uint64[8] out) private {
     uint i;
 
-    ctx.t[0] += ctx.c;
-    if(ctx.t[0] < ctx.c) ctx.t[1]++;
+    ctx.t += ctx.c;
+//    if(ctx.t[0] < ctx.c) ctx.t[1]++;
 
-    Log("Finalize: increment counters");
+    //Log("Finalize: increment counters");
 
-    while(ctx.c < 128){
-      ctx.b[ctx.c++] = 0;
-    }
+  //  while(ctx.c < 128){
+  //    ctx.b[ctx.c++] = 0;
+  //  }
 
-    Log("Finalize: empty buffer");
+    //Log("Finalize: empty buffer");
 
     compress(ctx,true);
 
-    Log("Finalize: compress");
+    //Log("Finalize: compress");
     for(i=0; i < ctx.outlen / 8; i++){
       out[i] = toLittleEndian(ctx.h[i]);
     }
@@ -184,7 +188,7 @@ contract BLAKE2b is GasTest{
       out[ctx.outlen/8] = shift_right(toLittleEndian(ctx.h[ctx.outlen/8]),64-8*(ctx.outlen%8));
     }
 
-    Log("Format output");
+    //Log("Format output");
   }
 
   function blake2b(bytes input, bytes key, bytes salt, bytes personalization, uint64 outlen) constant public returns(uint64[8]){
@@ -236,6 +240,19 @@ contract BLAKE2b is GasTest{
           return(0,0x20)
       }
   }
+
+  function get8(uint[4] a, uint i) returns(uint8 b){
+    uint tmp = a[i/32];
+
+    b = uint8((tmp / 2**(8*(31-i))) & 0xff);
+  }
+
+  function set8(uint[4] a, uint8 b, uint c) returns(uint){
+    assembly {
+        mstore8(add(a, c), b)
+    }
+}
+
 
 function toLittleEndian(uint64 a) returns(uint64 b){
     bytes8 temp = bytes8(a);
