@@ -115,10 +115,10 @@ contract BLAKE2b is GasTest{
       ctx.h[6] = ctx.h[6] ^ person[0];
       ctx.h[7] = ctx.h[7] ^ person[1];
 
-      ctx.t[0] = 0;
-      ctx.t[1] = 0;
+      //ctx.t[0] = 0;
+      //ctx.t[1] = 0;
 
-      ctx.c = 0;
+      //ctx.c = 0;
 
       ctx.outlen = outlen;
       i = key.length;
@@ -140,7 +140,7 @@ contract BLAKE2b is GasTest{
 
   }
 
-  function update(BLAKE2b_ctx ctx, bytes input) private {
+  function update(BLAKE2b_ctx ctx, bytes input) private { //This can be much more efficient
     uint i;
 
     for(i = 0; i < input.length; i++){
@@ -166,9 +166,9 @@ contract BLAKE2b is GasTest{
 
     //Log("Finalize: increment counters");
 
-    while(ctx.c < 128){
-      ctx.b[ctx.c++] = 0;
-    }
+  //  while(ctx.c < 128){
+  //    ctx.b[ctx.c++] = 0;
+  //  }
 
     //Log("Finalize: empty buffer");
 
