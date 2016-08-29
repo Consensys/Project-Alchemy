@@ -29,7 +29,7 @@ contract BLAKE2b is GasTest{
   struct BLAKE2b_ctx {
     uint8[128] b; //input buffer
     uint64[8] h;  //chained state
-    uint64[2] t; //total bytes
+    uint128 t; //total bytes
     uint64 c; //Size of b
     uint outlen; //diigest output size
   }
@@ -59,8 +59,8 @@ contract BLAKE2b is GasTest{
     }
 
 
-    v[12] = v[12] ^ ctx.t[0];
-    v[13] = v[13] ^ ctx.t[1];
+    v[12] = v[12] ^ uint64(ctx.t % 2**64);
+    v[13] = v[13] ^ uint64(ctx.t / 2**64);
 
     if(last) v[14] = ~v[14];
 
@@ -145,10 +145,10 @@ contract BLAKE2b is GasTest{
 
     for(i = 0; i < input.length; i++){
       if(ctx.c == 128){   //buffer full?
-        ctx.t[0] += ctx.c; //add counters
-        if(ctx.t[0] < ctx.c){ //overflow?
-          ctx.t[1] ++; //carry to high word
-        }
+        ctx.t += ctx.c; //add counters
+//        if(ctx.t[0] < ctx.c){ //overflow?
+//          ctx.t[1] ++; //carry to high word
+//        }
         compress(ctx, false);
         ctx.c = 0;
       }
@@ -161,8 +161,8 @@ contract BLAKE2b is GasTest{
   function finalize(BLAKE2b_ctx ctx, uint64[8] out) private {
     uint i;
 
-    ctx.t[0] += ctx.c;
-    if(ctx.t[0] < ctx.c) ctx.t[1]++;
+    ctx.t += ctx.c;
+//    if(ctx.t[0] < ctx.c) ctx.t[1]++;
 
     //Log("Finalize: increment counters");
 
