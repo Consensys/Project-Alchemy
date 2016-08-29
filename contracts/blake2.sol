@@ -27,7 +27,7 @@ contract BLAKE2b is GasTest{
 
 
   struct BLAKE2b_ctx {
-    uint8[128] b; //input buffer
+    uint256[4] b; //input buffer
     uint64[8] h;  //chained state
     uint128 t; //total bytes
     uint64 c; //Size of b
@@ -67,7 +67,7 @@ contract BLAKE2b is GasTest{
     for(i = 0; i <16; i++){
       uint64 mi = 0;
       for(uint j = 0; j < 8; j++){
-        mi = mi ^ shift_left(ctx.b[i*8 + j], j*8);
+        mi = mi ^ shift_left(get8(ctx.b, i*8 + j), j*8);
       }
       m[i] = mi;
     }
@@ -151,9 +151,11 @@ contract BLAKE2b is GasTest{
 //        }
         compress(ctx, false);
         ctx.c = 0;
+        delete ctx.b;
       }
 
-      ctx.b[ctx.c++] = uint8(input[i]);
+      set8(ctx.b, uint8(input[i]), ctx.c++);
+      //ctx.b[ctx.c++] = uint8(input[i]);
       //Log("Buffer refilled");
     }
   }
@@ -236,6 +238,19 @@ contract BLAKE2b is GasTest{
           return(0,0x20)
       }
   }
+
+  function get8(uint[4] a, uint i) returns(uint8 b){
+    uint tmp = a[i/32];
+
+    b = uint8((tmp / 2**(8*(31-i))) & 0xff);
+  }
+
+  function set8(uint[4] a, uint8 b, uint c) returns(uint){
+    assembly {
+        mstore8(add(a, c), b)
+    }
+}
+
 
 function toLittleEndian(uint64 a) returns(uint64 b){
     bytes8 temp = bytes8(a);
