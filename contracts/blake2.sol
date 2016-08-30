@@ -169,11 +169,11 @@ contract BLAKE2b is GasTest{
 //    if(ctx.t[0] < ctx.c) ctx.t[1]++;
 
     //Log("Finalize: increment counters");
-
-  //  while(ctx.c < 128){
-  //    ctx.b[ctx.c++] = 0;
-  //  }
-
+/*
+    while(ctx.c < 128){
+      set8(ctx.b,0,ctx.c++);
+    }
+*/
     //Log("Finalize: empty buffer");
 
     compress(ctx,true);
