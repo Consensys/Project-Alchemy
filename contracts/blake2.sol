@@ -37,14 +37,26 @@ contract BLAKE2b is GasTest{
 
   function G(uint64[16] v, uint a, uint b, uint c, uint d, uint64 x, uint64 y) constant { //OPTIMIZE HERE
        Log("G start");
-       v[a] = v[a] + v[b] + x;
-       v[d] = rotate(v[d] ^ v[a], 32);
-       v[c] = v[c] + v[d];
-       v[b] = rotate(v[b] ^ v[c], 24);
-       v[a] = v[a] + v[b] + y;
-       v[d] = rotate(v[d] ^ v[a], 16);
-       v[c] = v[c] + v[d];
-       v[b] = rotate(v[b] ^ v[c], 63);
+       uint64 va = v[a];
+       uint64 vb = v[b];
+       uint64 vc = v[c];
+       uint64 vd = v[d];
+
+       assembly{
+         va := addmod(add(va,vb),x, 0x10000000000000000)
+         vd := xor(div(xor(vd,va), 0x100000000), mulmod(xor(vd, va),0x100000000, 0x10000000000000000))
+         vc := addmod(vc,vd, 0x10000000000000000)
+         vb := xor(div(xor(vb,vc), 0x1000000), mulmod(xor(vb, vc),0x10000000000, 0x10000000000000000))
+         va := addmod(add(va,vb),y, 0x10000000000000000)
+         vd := xor(div(xor(vd,va), 0x10000), mulmod(xor(vd, va),0x1000000000000, 0x10000000000000000))
+         vc := addmod(vc,vd, 0x10000000000000000)
+         vb := xor(div(xor(vb,vc), 0x8000000000000000), mulmod(xor(vb, vc),0x2, 0x10000000000000000))
+       }
+
+       v[a] = va;
+       v[b] = vb;
+       v[c] = vc;
+       v[d] = vd;
   }
 
   function compress(BLAKE2b_ctx ctx, bool last) private {
@@ -150,7 +162,7 @@ contract BLAKE2b is GasTest{
 //        }
         compress(ctx, false);
         ctx.c = 0;
-        delete ctx.b;
+        //delete ctx.b;
       }
 
       set8(ctx.b, uint8(input[i]), ctx.c++);
