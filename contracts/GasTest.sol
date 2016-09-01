@@ -10,4 +10,6 @@ contract GasTest{
       LogGas(message, int(lastGas - msg.gas - calibration));
       lastGas = msg.gas;
   }
+
+  event LogVal(string message, bytes32 v);
 }

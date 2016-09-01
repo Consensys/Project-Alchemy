@@ -65,7 +65,6 @@ contract BLAKE2b is GasTest{
     uint64[16] memory m;
 
 
-
     for(uint i=0; i<8; i++){
       v[i] = ctx.h[i];
       v[i+8] = IV[i];
@@ -77,12 +76,20 @@ contract BLAKE2b is GasTest{
 
     if(last) v[14] = ~v[14];
 
+    uint64 mi;
+    uint j;
+    uint b;
+
     for(i = 0; i <16; i++){ //OPTIMISE
-      uint64 mi = 0;
-      for(uint j = 0; j < 8; j++){
-        mi = mi ^ shift_left(get8(ctx.b, i*8 + j), j*8);
+      mi = 0;
+      if(i%4 == 0){
+        b=ctx.b[i/4];
       }
-      m[i] = mi;
+      assembly{
+        let k := mod(i,4)
+        mi := and(div(b,exp(2,mul(64,sub(3,k)))), 0xFFFFFFFFFFFFFFFF)
+      }
+      m[i] = toLittleEndian(mi);
     }
 
     Log("Compress: Begin G");
