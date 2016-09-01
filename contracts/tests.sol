@@ -11,10 +11,19 @@ contract BlakeTest is Test, EventDefinitions, GasTest {
   Tester tester;
   uint startGas;
 
-  function setUp(){
+  function BlakeTest(){
     blake = new BLAKE2b();
+  }
+
+  function setUp(){
     tester = new Tester();
     tester._target(blake);
+  }
+
+  function testDeploy(){
+    startGas = msg.gas;
+    new BLAKE2b();
+    ReportGas(startGas-msg.gas);
   }
 
   function testFinalHash(){

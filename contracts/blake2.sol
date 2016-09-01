@@ -216,7 +216,6 @@ contract BLAKE2b is GasTest{
           (a & 0x0000000000FF0000) *0x0000000001000000^
           (a & 0x000000000000FF00) *0x0000010000000000^
           (a & 0x00000000000000FF) *0x0100000000000000;
-
   }
 
   function shift_right(uint64 a, uint shift) constant returns(uint64 b){
