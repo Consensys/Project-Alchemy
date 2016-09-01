@@ -37,14 +37,23 @@ contract BLAKE2b is GasTest{
 
   function G(uint64[16] v, uint a, uint b, uint c, uint d, uint64 x, uint64 y) constant { //OPTIMIZE HERE
        //Log("G start");
-       v[a] = v[a] + v[b] + x;
-       v[d] = rotate(v[d] ^ v[a], 32);
-       v[c] = v[c] + v[d];
-       v[b] = rotate(v[b] ^ v[c], 24);
-       v[a] = v[a] + v[b] + y;
-       v[d] = rotate(v[d] ^ v[a], 16);
-       v[c] = v[c] + v[d];
-       v[b] = rotate(v[b] ^ v[c], 63);
+       uint64 va = v[a];
+       uint64 vb = v[b];
+       uint64 vc = v[c];
+       uint64 vd = v[d];
+       va = va + vb + x;
+       vd = rotate(vd ^ va, 32);
+       vc = vc + vd;
+       vb = rotate(vb ^ vc, 24);
+       va = va + vb + y;
+       vd = rotate(vd ^ va, 16);
+       vc = vc + vd;
+       vb = rotate(vb ^ vc, 63);
+
+       v[a] = va;
+       v[b] = vb;
+       v[c] = vc;
+       v[d] = vd;
   }
 
   function compress(BLAKE2b_ctx ctx, bool last) private {
@@ -153,7 +162,7 @@ contract BLAKE2b is GasTest{
 //        }
         compress(ctx, false);
         ctx.c = 0;
-        delete ctx.b;
+        //delete ctx.b;
       }
 
       set8(ctx.b, uint8(input[i]), ctx.c++);
