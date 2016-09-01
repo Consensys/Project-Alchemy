@@ -41,14 +41,17 @@ contract BLAKE2b is GasTest{
        uint64 vb = v[b];
        uint64 vc = v[c];
        uint64 vd = v[d];
-       va = va + vb + x;
-       vd = rotate(vd ^ va, 32);
-       vc = vc + vd;
-       vb = rotate(vb ^ vc, 24);
-       va = va + vb + y;
-       vd = rotate(vd ^ va, 16);
-       vc = vc + vd;
-       vb = rotate(vb ^ vc, 63);
+
+       assembly{
+         va := addmod(add(va,vb),x, 0x10000000000000000)
+         vd := xor(div(xor(vd,va), 0x100000000), mulmod(xor(vd, va),0x100000000, 0x10000000000000000))
+         vc := addmod(vc,vd, 0x10000000000000000)
+         vb := xor(div(xor(vb,vc), 0x1000000), mulmod(xor(vb, vc),0x10000000000, 0x10000000000000000))
+         va := addmod(add(va,vb),y, 0x10000000000000000)
+         vd := xor(div(xor(vd,va), 0x10000), mulmod(xor(vd, va),0x1000000000000, 0x10000000000000000))
+         vc := addmod(vc,vd, 0x10000000000000000)
+         vb := xor(div(xor(vb,vc), 0x8000000000000000), mulmod(xor(vb, vc),0x2, 0x10000000000000000))
+       }
 
        v[a] = va;
        v[b] = vb;
