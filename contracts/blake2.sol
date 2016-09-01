@@ -115,11 +115,9 @@ contract BLAKE2b is GasTest{
 
   function init(BLAKE2b_ctx ctx, uint64 outlen, bytes key, uint64[2] salt, uint64[2] person) private{
 
-      uint i;
-
       if(outlen == 0 || outlen > 64 || key.length > 64) throw;
 
-      for(i = 0; i< 8; i++){
+      for(uint i = 0; i< 8; i++){
         ctx.h[i] = IV[i];
       }
 
@@ -131,19 +129,10 @@ contract BLAKE2b is GasTest{
       ctx.h[6] = ctx.h[6] ^ person[0];
       ctx.h[7] = ctx.h[7] ^ person[1];
 
-      //ctx.t[0] = 0;
-      //ctx.t[1] = 0;
-
-      //ctx.c = 0;
-
       ctx.outlen = outlen;
       i = key.length;
 
       //Log("Set up parameters");
-
-  //    for(i = key.length; i < 128; i++){
-  //      ctx.b[i] = 0;
-  //    }
 
       //Log("Fill buffer");
 
@@ -163,9 +152,6 @@ contract BLAKE2b is GasTest{
     for(i = 0; i < input.length; i++){
       if(ctx.c == 128){   //buffer full?
         ctx.t += ctx.c; //add counters
-//        if(ctx.t[0] < ctx.c){ //overflow?
-//          ctx.t[1] ++; //carry to high word
-//        }
         compress(ctx, false);
         ctx.c = 0;
         //delete ctx.b;
@@ -176,30 +162,18 @@ contract BLAKE2b is GasTest{
       assembly{
         mstore8(add(b,c),a)
       }
-      //set8(ctx.b, uint8(input[i]), ctx.c++);
-      //ctx.b[ctx.c++] = uint8(input[i]);
       //Log("Buffer refilled");
     }
   }
 
   function finalize(BLAKE2b_ctx ctx, uint64[8] out) private {
-    uint i;
-
     ctx.t += ctx.c;
-//    if(ctx.t[0] < ctx.c) ctx.t[1]++;
-
-    //Log("Finalize: increment counters");
-/*
-    while(ctx.c < 128){
-      set8(ctx.b,0,ctx.c++);
-    }
-*/
     //Log("Finalize: empty buffer");
 
     compress(ctx,true);
 
     //Log("Finalize: compress");
-    for(i=0; i < ctx.outlen / 8; i++){
+    for(uint i=0; i < ctx.outlen / 8; i++){
       out[i] = getWords(ctx.h[i]);
     }
 
@@ -257,9 +231,8 @@ contract BLAKE2b is GasTest{
     for(uint i = 0; i<input.length; i++){
         output[i/8] = output[i/8] ^ shift_left(uint64(input[i]), 64-8*(i%8+1));
     }
-    for(i = 0; i<2; i++){
-        output[i] = getWords(output[i]);
-    }
+        output[0] = getWords(output[0]);
+        output[1] = getWords(output[1]);
   }
 
   function formatOutput(uint64[8] input) constant returns(bytes32[2]){
