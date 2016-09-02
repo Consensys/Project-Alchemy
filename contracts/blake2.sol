@@ -1,4 +1,6 @@
-contract BLAKE2b {
+import "./GasTest.sol";
+
+contract BLAKE2b is GasTest{
 
   //CONSTANTS
   uint8[16][12] public SIGMA = [
@@ -25,28 +27,42 @@ contract BLAKE2b {
 
 
   struct BLAKE2b_ctx {
-    uint8[128] b; //input buffer
+    uint256[4] b; //input buffer
     uint64[8] h;  //chained state
-    uint64[2] t; //total bytes
+    uint128 t; //total bytes
     uint64 c; //Size of b
     uint outlen; //diigest output size
   }
 
+
   function G(uint64[16] v, uint a, uint b, uint c, uint d, uint64 x, uint64 y) constant { //OPTIMIZE HERE
-       v[a] = v[a] + v[b] + x;
-       v[d] = rotate(v[d] ^ v[a], 32);
-       v[c] = v[c] + v[d];
-       v[b] = rotate(v[b] ^ v[c], 24);
-       v[a] = v[a] + v[b] + y;
-       v[d] = rotate(v[d] ^ v[a], 16);
-       v[c] = v[c] + v[d];
-       v[b] = rotate(v[b] ^ v[c], 63);
+       //Log("G start");
+       uint64 va = v[a];
+       uint64 vb = v[b];
+       uint64 vc = v[c];
+       uint64 vd = v[d];
+
+       assembly{
+         va := addmod(add(va,vb),x, 0x10000000000000000)
+         vd := xor(div(xor(vd,va), 0x100000000), mulmod(xor(vd, va),0x100000000, 0x10000000000000000))
+         vc := addmod(vc,vd, 0x10000000000000000)
+         vb := xor(div(xor(vb,vc), 0x1000000), mulmod(xor(vb, vc),0x10000000000, 0x10000000000000000))
+         va := addmod(add(va,vb),y, 0x10000000000000000)
+         vd := xor(div(xor(vd,va), 0x10000), mulmod(xor(vd, va),0x1000000000000, 0x10000000000000000))
+         vc := addmod(vc,vd, 0x10000000000000000)
+         vb := xor(div(xor(vb,vc), 0x8000000000000000), mulmod(xor(vb, vc),0x2, 0x10000000000000000))
+       }
+
+       v[a] = va;
+       v[b] = vb;
+       v[c] = vc;
+       v[d] = vd;
   }
 
   function compress(BLAKE2b_ctx ctx, bool last) private {
+    //Log("Begin Compress");
     uint64[16] memory v;
     uint64[16] memory m;
-
 
 
     for(uint i=0; i<8; i++){
@@ -55,20 +71,27 @@ contract BLAKE2b {
     }
 
 
-    v[12] = v[12] ^ ctx.t[0];
-    v[13] = v[13] ^ ctx.t[1];
+    v[12] = v[12] ^ uint64(ctx.t % 2**64);
+    v[13] = v[13] ^ uint64(ctx.t / 2**64);
 
     if(last) v[14] = ~v[14];
 
-    for(i = 0; i <16; i++){
-      uint64 mi = 0;
-      for(uint j = 0; j < 8; j++){
-        mi = mi ^ shift_left(ctx.b[i*8 + j], j*8);
+    uint64 mi;
+    uint b;
+
+    for(i = 0; i <16; i++){ //OPTIMISE
+      mi = 0;
+      if(i%4 == 0){
+        b=ctx.b[i/4];
       }
-      m[i] = mi;
+      assembly{
+        let k := mod(i,4)
+        mi := and(div(b,exp(2,mul(64,sub(3,k)))), 0xFFFFFFFFFFFFFFFF)
+      }
+      m[i] = getWords(mi);
     }
 
-
+    //Log("Compress: Begin G");
     for(i=0; i<12; i++){
       G( v, 0, 4, 8, 12, m[SIGMA[i][0]], m[SIGMA[i][1]]);
       G( v, 1, 5, 9, 13, m[SIGMA[i][2]], m[SIGMA[i][3]]);
@@ -80,20 +103,26 @@ contract BLAKE2b {
       G( v, 3, 4, 9, 14, m[SIGMA[i][14]], m[SIGMA[i][15]]);
     }
 
+    //Log("Compress: End G");
+
 
     for(i=0; i<8; ++i){
       ctx.h[i] = ctx.h[i] ^ v[i] ^ v[i+8];
     }
+
+    //Log("End Compress");
   }
 
-  function init(BLAKE2b_ctx ctx, uint64 outlen, bytes key, uint64[2] salt, uint64[2] person) internal {
-      uint i;
+
+  function init(BLAKE2b_ctx ctx, uint64 outlen, bytes key, uint64[2] salt, uint64[2] person) private{
 
       if(outlen == 0 || outlen > 64 || key.length > 64) throw;
 
-      for(i = 0; i< 8; i++){
+      for(uint i = 0; i< 8; i++){
         ctx.h[i] = IV[i];
       }
+
+      //Log("Copied IV");
 
       ctx.h[0] = ctx.h[0] ^ 0x01010000 ^ shift_left(uint64(key.length), 8) ^ outlen; // Set up parameter block
       ctx.h[4] = ctx.h[4] ^ salt[0];
@@ -101,69 +130,74 @@ contract BLAKE2b {
       ctx.h[6] = ctx.h[6] ^ person[0];
       ctx.h[7] = ctx.h[7] ^ person[1];
 
-      ctx.t[0] = 0;
-      ctx.t[1] = 0;
-
-      ctx.c = 0;
-
       ctx.outlen = outlen;
       i = key.length;
 
-      for(i = key.length; i < 128; i++){
-        ctx.b[i] = 0;
-      }
+      //Log("Set up parameters");
+
+      //Log("Fill buffer");
+
 
       if(key.length > 0){
         update(ctx, key);
         ctx.c = 128;
       }
 
+      //Log("Add key");
+
   }
 
-  function update(BLAKE2b_ctx ctx, bytes input) internal {
+
+  function update(BLAKE2b_ctx ctx, bytes input) private { //This can be much more efficient
     uint i;
 
     for(i = 0; i < input.length; i++){
       if(ctx.c == 128){   //buffer full?
-        ctx.t[0] += ctx.c; //add counters
-        if(ctx.t[0] < ctx.c){ //overflow?
-          ctx.t[1] ++; //carry to high word
-        }
+        ctx.t += ctx.c; //add counters
         compress(ctx, false);
         ctx.c = 0;
+        //delete ctx.b;
       }
-
-      ctx.b[ctx.c++] = uint8(input[i]);
-
+      uint[4] memory b = ctx.b;
+      uint c = ctx.c++;
+      uint8 a = uint8(input[i]);
+      assembly{
+        mstore8(add(b,c),a)
+      }
+      //Log("Buffer refilled");
     }
   }
 
-  function finalize(BLAKE2b_ctx ctx, uint64[8] out) internal {
-    uint i;
 
-    ctx.t[0] += ctx.c;
-    if(ctx.t[0] < ctx.c) ctx.t[1]++;
+  function finalize(BLAKE2b_ctx ctx, uint64[8] out) private {
+    ctx.t += ctx.c;
+    //Log("Finalize: empty buffer");
 
-    while(ctx.c < 128){
-      ctx.b[ctx.c++] = 0;
-    }
 
     compress(ctx,true);
 
-
-    for(i=0; i < ctx.outlen / 8; i++){
-      out[i] = toLittleEndian(ctx.h[i]);
+    //Log("Finalize: compress");
+    for(uint i=0; i < ctx.outlen / 8; i++){
+      out[i] = getWords(ctx.h[i]);
     }
+
 
     if(ctx.outlen < 64){
-      out[ctx.outlen/8] = shift_right(toLittleEndian(ctx.h[ctx.outlen/8]),64-8*(ctx.outlen%8));
+      out[ctx.outlen/8] = shift_right(getWords(ctx.h[ctx.outlen/8]),64-8*(ctx.outlen%8));
     }
+
+    //Log("Format output");
   }
 
   function blake2b(bytes input, bytes key, bytes salt, bytes personalization, uint64 outlen) constant public returns(uint64[8]){
+    //Log("Begin init");
+    //Log("Test Calib 123456789");
+    //Log("Test Calib 234567");
+
     BLAKE2b_ctx memory ctx;
     uint64[8] memory out;
 
+    //Log("Init context");
 
     init(ctx, outlen, key, formatInput(salt), formatInput(personalization));
     update(ctx, input);
@@ -178,15 +212,14 @@ contract BLAKE2b {
 // Utility functions
   function getWords(uint64 a) constant returns (uint64 b) { //Flips endianness of words
 
-    return    (a & 0xFF00000000000000   )/ 0x1000000000000000^
-    shift_left(a & 0x00FF000000000000, 8)/ 0x0010000000000000^
-    shift_left(a & 0x0000FF0000000000, 16)/0x0000100000000000^
-    shift_left(a & 0x000000FF00000000, 24)/0x0000001000000000^
-    shift_left(a & 0x00000000FF000000, 32)/0x0000000010000000^
-    shift_left(a & 0x0000000000FF0000, 40)/0x0000000000100000^
-    shift_left(a & 0x000000000000FF00, 48)/0x0000000000001000^
-    shift_left(a & 0x00000000000000FF, 56)/0x0000000000000010;
-
+  return  (a & 0xFF00000000000000) /0x0100000000000000^
+          (a & 0x00FF000000000000) /0x0000010000000000^
+          (a & 0x0000FF0000000000) /0x0000000001000000^
+          (a & 0x000000FF00000000) /0x0000000000000100^
+          (a & 0x00000000FF000000) *0x0000000000000100^
+          (a & 0x0000000000FF0000) *0x0000000001000000^
+          (a & 0x000000000000FF00) *0x0000010000000000^
+          (a & 0x00000000000000FF) *0x0100000000000000;
   }
 
   function shift_right(uint64 a, uint shift) constant returns(uint64 b){
@@ -197,33 +230,12 @@ contract BLAKE2b {
     return uint64((a * 2**shift) % (2**64));
   }
 
-  function rotate(uint64 a, uint shift) constant returns(uint64 b){
-    return shift_right(a, shift) ^ shift_left(a, 64-shift);
-  }
-
-  function assign (bytes32 a, uint b, byte c) constant returns (bytes32 d){
-      uint e = uint(c);
-      assembly {
-          mstore(0,a)
-          mstore8(b,e)
-          return(0,0x20)
-      }
-  }
-
-function toLittleEndian(uint64 a) returns(uint64 b){
-    bytes8 temp = bytes8(a);
-    for(uint i; i < 8; i++){
-      b = uint64(b ^ (uint64(temp[i]) * (2**(0x08 * i))));
-    }
-  }
-
   function formatInput(bytes input) constant returns (uint64[2] output){
     for(uint i = 0; i<input.length; i++){
         output[i/8] = output[i/8] ^ shift_left(uint64(input[i]), 64-8*(i%8+1));
     }
-    for(i = 0; i<2; i++){
-        output[i] = toLittleEndian(output[i]);
-    }
+        output[0] = getWords(output[0]);
+        output[1] = getWords(output[1]);
   }
 
   function formatOutput(uint64[8] input) constant returns(bytes32[2]){
