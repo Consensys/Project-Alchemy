@@ -1,84 +1,86 @@
 import "./blake2.sol";
 
-library StepRowLib {
-  uint32 constant n = 96;
-  uint32 constant k = 5;
-  struct StepRow{
-    bytes hash; //Statically sized, use static types once n is defined
-    uint len;
-    uint32[] indices;
-  }
+contract StepRowLib is BLAKE2b{
+      uint constant n = 96;
+      uint constant k = 5;
+      uint public d = 0;
 
-  function newStepRow(uint n, BLAKE2b.BLAKE2b_ctx state, uint32 i) returns(StepRow){
-    StepRow memory self;
-    bytes person = "ZCashPOW";
-    /*
-    TODO: ADD N and K to personalization bytes
-    */
+      struct StepRow{
+        uint64[8] hash;
+        uint len;
+        uint32[] indices;
+      }
 
-    self.len = n/8;
-    self.indices.push(i);
-    self.hash = BLAKE2b.blake2b(i, "", "", person, n/8);
 
-    return self;
-  }
+      function newStepRow(uint n, BLAKE2b_ctx state, uint32 i) internal returns (StepRow step){
+        step.len = n/8;
+        indicies[indices.length++]=i;
+        update(state, formatInput(i));
+        finalize(state, step.hash);
 
-  function IndicesBefore(StepRow self, StepRow a){
-    return self.indices[0] < a.indices[0];
-  }
+        assert(step.indices.length == 1);
+      }
 
-  function TrimHash(StepRow self, uint l){
-    bytes memory p;
+      function copyStepRow(StepRow step1, StepRow step2){
+        step2.len = step1.len;
+        step2.hash = step1.hash;
+        step2.indices = step1.indices;
+      }
 
-    for(uint i = 0; i< self.len-l; i++){
-      p.push(self.hash[i+1]);
-    }
+      function xorEqStepRow(StepRow a, StepRow b){  // a ^= b
+        if(a. len != b.len || a.indices.length != b.indices.length) throw;
+        for(uint i = 0; i < a.len; i++){
+          a.hash[i] = a.hash[1] ^ b.hash[i];  //XOR hashes together
+        }
 
-    self.hash = p;
-    self.len -=l;
-  }
+        for(i = 0; i< b.indices.length; i++){
+          a.indices[a.indices.length++] = b.indices[i]; //Append b's indices to a
+        }
+      }
 
-  function XOR(StepRow self, StepRow a) returns (StepRow){
-    if(self.len != a.len) throw;
-    if(a.indices.length != self.indices.length) throw;
+      function trimHashStepRow(StepRow a, int l){
+        uint64[] p;
+        for(uint i = 0; i < a.len - l; i++){
+          p[p.length++] = a.hash[i + l];
+        }
 
-    for(uint i=0; i<self.len; i++){
-      self.hash = self.hash[i] ^ a.hash[i];
-    }
+        a.hash = p;
+        a.len -= l;
+      }
 
-    for(i=0; i< a.indices.length; i++){
-      self.indices.push(a.indices[i]);
-    }
+      function isZeroStepRow(StepRow a) returns (bool){
+        for (int i = 0; i < len; i++)
+          if(hash[i]!=0) return false;
+        }
+        return true;
+      }
 
-    return self;
-  }
+      function hasCollisionStepRow(StepRow a, StepRow b, uint l) returns (bool){
+        for(uint i = 0; i< l; i++){
+          if(a.hash[i] != b.hash[i]) return false;
+        }
+        return true;
+      }
 
-  function IsZero(StepRow self) returns(bool){
-    for(uint i=0; i<self.len; i++){
-      if(self.hash[i] != 0) return false;
-    }
-    return true;
-  }
+      function areDistinctStepRow(StepRow a, StepRow b) returns (bool){
+        mapping(uint32 => bool) memory map;
 
-  function HasCollisions(StepRow a, StepRow b, int l) returns (bool){
-    for(uint j=0; j< l; j++){
-      if(a.hash[j] != b.hash[j]) return false;
-    }
-    return true;
-  }
+        for(uint i; i< a.indices.length; i++){
+          map[a.indices[i]] = true;
+        }
 
-  function DistinctIndicies(StepRow a, StepRow b) returns (bool){ //TODO: clarify what this does
-/*
-    mapping(uint32 => bool) memory indices;
-    for(uint i=0; i< a.indices.length; i++){
-      indices[i] = true;
-    }
+        for(i = 0; i<b.indices.length; i++){
+          if(map[b[i]]) return false;
+        }
+        return true;
+      }
 
-    for(i =0; i < b.indices.length; i++){
-      if(indices[b.indices[i]]) return false;
-    }
-*/
-    return true;
-  }
+      function destructStepRow(StepRow step){
+        delete step;
+      }
+
+      function assert(bool a){
+        if(!a) throw;
+      }
 
 }
