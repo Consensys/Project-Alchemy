@@ -59,7 +59,7 @@ contract BLAKE2b is GasTest{
        v[d] = vd;
   }
 
-  function compress(BLAKE2b_ctx ctx, bool last) private {
+  function compress(BLAKE2b_ctx ctx, bool last) internal {
     //Log("Begin Compress");
     uint64[16] memory v;
     uint64[16] memory m;
@@ -114,7 +114,7 @@ contract BLAKE2b is GasTest{
   }
 
 
-  function init(BLAKE2b_ctx ctx, uint64 outlen, bytes key, uint64[2] salt, uint64[2] person) private{
+  function init(BLAKE2b_ctx ctx, uint64 outlen, bytes key, uint64[2] salt, uint64[2] person) internal{
 
       if(outlen == 0 || outlen > 64 || key.length > 64) throw;
 
@@ -148,7 +148,7 @@ contract BLAKE2b is GasTest{
   }
 
 
-  function update(BLAKE2b_ctx ctx, bytes input) private { //This can be much more efficient
+  function update(BLAKE2b_ctx ctx, bytes input) internal { //This can be much more efficient
     uint i;
 
     for(i = 0; i < input.length; i++){
@@ -169,7 +169,7 @@ contract BLAKE2b is GasTest{
   }
 
 
-  function finalize(BLAKE2b_ctx ctx, uint64[8] out) private {
+  function finalize(BLAKE2b_ctx ctx, uint64[8] out) internal {
     ctx.t += ctx.c;
     //Log("Finalize: empty buffer");
 

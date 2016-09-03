@@ -7,7 +7,7 @@ contract EquihashTest is Test {
   Tester tester;
 
   function EquihashTest(){
-    equi = new EquihashValidator(96, 5, 0);
+    equi = new EquihashValidator();
   }
 
   function setUp(){
