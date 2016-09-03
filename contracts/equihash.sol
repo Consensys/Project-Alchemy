@@ -1,74 +1,79 @@
 import "./blake2.sol";
 import "./StepRowLib.sol";
-contract EquihashValidator is BLAKE2b{
+contract EquihashValidator{
 
-    uint public n = 96;
-    uint public k = 5;
-    uint public d = 0;
-
-
-    function EquihashValidator(uint _n, uint _k, uint _d){
-      n = _n;
-      k = _k;
-      d = _d;
+    struct Equihash{
+      uint n;
+      uint k;
     }
 
+    function validate_params(uint n, uint k)returns(bool){
+      if(k >= n || n%8 != 0 || (n/(k+1)) % 8 != 0) throw;
+    }
 
-    function initializeState(BLAKE2b_ctx state, uint32[] soln, bytes I){
-      bytes4 N = bytes4(toLittleEndian(uint64(n)));
-      bytes4 K = bytes4(toLittleEndian(uint64(k)));
+    function newEquihash(uint n, uint k) internal returns(Equihash eq){
+      validate_params(n,k);
+      eq.n = n;
+      eq.k = k;
+    }
 
-      bytes personalization = "ZcashPoW";
+    function initializeStateEquihash(Equihash eq, BLAKE2b_ctx state){
+      bytes person = "ZcashPOW";
+      bytes8 N = bytes8(getWords(eq.n));
+      bytes8 K = bytes8(getWords(eq.k));
+
       for(uint i = 0; i<4; i++){
-        personalization.push(N[i]);
+        person[person.length++] = N[i];
       }
+
       for(i = 0; i<4; i++){
-        personalization.push(K[i]);
+        person[person.length++] = K[i];
       }
 
-      init(state, N/8, "", formatInput(""), formatInput(personalization));
-
-      update(state, I);
-      update(state, soln);
+      init(state, eq.n/8, "", formatInput(""), formatInput(person));
     }
 
-    function validate(bytes I, uint nonce, uint32[] soln) returns (bool){
-      BLAKE2b_ctx memory state;
+    function isValidSolutionEquihash(Equihash eq, BLAKE2b_ctx state, uint32[] soln){
+      uint32 soln_size = 2**eq.k;
 
-      initializeState(state, soln, I);
+      if(soln_size != soln.length) throw;
 
-      uint soln_size = 2**k;
+      StepRow[] X;
 
-      if(soln.length != soln_size) return false;
-
-      StepRowLib.StepRow[] X;
-
-      for(uint i=0; i< soln.length; i++){
-        X.push(StepRowLib.newStepRow(n, state, i));
+      for(uint i = 0; i < soln_size; i++){
+        X[X.length++] = newStepRow(eq.n, state, soln[i]);
       }
+
+      x_size = X.length();
+
+      uint hashlen = eq.n/8;
+      uint lenindices = 32;
 
       while(X.length > 1){
-        StepRowLib.StepRow[] Xc;
+        StepRow[] memory Xc;
 
-        for(i=0; i< X.length; i+=2){
-          if(!StepRowLib.HasCollision(X[i],X[i+1], CollisionByteLength)) return false;
+        for (int i = 0; i < X.length(); i += 2) {
+            if(!hasCollisionStepRow(X[i], X[i+1], byteLengthEquihash())) return false;
+            if(indicesBeforeStepRow(X[i+1],X[i])) return false;
+            if(!areDistinctStepRow(X[i], X[i+1])) return false;
 
-          if(X[i+1].IndicesBefore(X[i])) return false;
-
-          if(!StepRowLib.DistinctIndices(X[i+1], X[i])) return false;
-
-          Xc.push(X[i].XOR(X[i+1]));
-          Xc[Xc.length-1].TrimHash(CollisionByteLength());
-        }
-
-        X = Xc;
+            Xc[Xc.length++] = xorStepRow(X[i], X[i+1]);
+            trimHashStepRow(Xc[Xc.length -1], byteLengthEquihash());
+          }
+          X = Xc;
       }
-
-      return X[0].isZero();
+      assert(X.length == 1);
+      return isZeroStepRow(X[0]);
     }
 
-    function CollisionByteLength() constant returns (uint){
-      return (n/(k+1))/8;
+    function bitLengthEquihash(Equihash eq) constant returns(uint){
+      return eq.n/(eq.k+1);
     }
+    function byteLengthEquihash(Equihash eq) constant returns (uint){
+      return bitLengthEquihash(eq)/8;
+    }
+
+
+
 
 }

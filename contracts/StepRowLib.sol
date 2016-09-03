@@ -33,6 +33,17 @@ contract StepRowLib is BLAKE2b{
           a.hash[i] = a.hash[1] ^ b.hash[i];  //XOR hashes together
         }
 
+        function xorStepRow(StepRow a, StepRow b) internal returns (StepRow){
+          if (a.indices[0] < b.indices[0]) {
+            xorEqStepRow(a,b);
+            return a;
+          }
+          else{
+            xorEqStepRow(b,a);
+            return b;
+          }
+        }
+
         for(i = 0; i< b.indices.length; i++){
           a.indices[a.indices.length++] = b.indices[i]; //Append b's indices to a
         }
@@ -60,6 +71,10 @@ contract StepRowLib is BLAKE2b{
           if(a.hash[i] != b.hash[i]) return false;
         }
         return true;
+      }
+
+      function indicesBeforeStepRow(StepRow a, StepRow b) constant returns (bool){
+        return a.indices[0] < b.indices[0];
       }
 
       function areDistinctStepRow(StepRow a, StepRow b) returns (bool){
