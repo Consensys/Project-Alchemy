@@ -1,3 +1,4 @@
+pragma solidity ^0.4.0;
 import "./StepRowLib.sol";
 contract EquihashValidator is StepRowLib{
 
@@ -17,7 +18,7 @@ contract EquihashValidator is StepRowLib{
     }
 
     function initializeStateEquihash(Equihash eq, BLAKE2b_ctx state) internal {
-      bytes person = "ZcashPOW";
+      bytes person;// =bytes("ZcashPOW");
       bytes8 N = bytes8(getWords(eq.n));
       bytes8 K = bytes8(getWords(eq.k));
 
@@ -37,24 +38,24 @@ contract EquihashValidator is StepRowLib{
 
       if(soln_size != soln.length) throw;
 
-      StepRow[] memory X;
+      StepRow[] memory X = new StepRow[](soln_size);
 
       for(uint i = 0; i < soln_size; i++){
-        X[X.length++] = newStepRow(eq.n, state, soln[i]);
+        X[i] = newStepRow(eq.n, state, soln[i]);
       }
 
       uint hashlen = eq.n/8;
       uint lenindices = 32;
 
       while(X.length > 1){
-        StepRow[] memory Xc;
+        StepRow[] memory Xc = new StepRow[](X.length/2);
 
         for (i = 0; i < X.length; i += 2) {
             if(!hasCollisionStepRow(X[i], X[i+1], byteLengthEquihash(eq))) return false;
             if(indicesBeforeStepRow(X[i+1],X[i])) return false;
             if(!areDistinctStepRow(X[i], X[i+1])) return false;
 
-            Xc[Xc.length++] = xorStepRow(X[i], X[i+1]);
+            Xc[i/2] = xorStepRow(X[i], X[i+1]);
             trimHashStepRow(Xc[Xc.length -1], byteLengthEquihash(eq));
           }
           X = Xc;

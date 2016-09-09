@@ -1,3 +1,4 @@
+pragma solidity ^0.4.0;
 import "./blake2.sol";
 import "dapple/test.sol";
 

@@ -1,3 +1,4 @@
+pragma solidity ^0.4.0;
 import "./GasTest.sol";
 
 contract BLAKE2b is GasTest{

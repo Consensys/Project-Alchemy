@@ -1,3 +1,4 @@
+pragma solidity ^0.4.0;
 contract GasTest{
   uint lastGas;
   uint constant calibration = 5194;
