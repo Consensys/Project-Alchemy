@@ -8,17 +8,25 @@ contract StepRowLib is BLAKE2b{
 
       mapping(uint32 => bool)  map;
 
+      struct IndexArray{
+        uint32[100] val;
+        uint length;
+      }
+
       struct StepRow{
         uint64[8] hash;
         uint len;
-        uint32[] indices;
+        IndexArray indices;
       }
 
 
       function newStepRow(uint n, BLAKE2b_ctx state, uint32 i) internal returns (StepRow step){
         step.len = n/8;
-        step.indices[step.indices.length++]=i;
-        bytes memory input= bytes(i);
+        step.indices.val[step.indices.length++]=i;
+        bytes memory input = new bytes(4);
+        for(uint j; j < 4; j++){
+          input[j] = byte(shift_right(shift_left(uint64(i), 24-8*j), 8*j));
+        }
         update(state, input);
         finalize(state, step.hash);
 
@@ -37,12 +45,12 @@ contract StepRowLib is BLAKE2b{
           a.hash[i] = a.hash[1] ^ b.hash[i];  //XOR hashes together
         }
         for(i = 0; i< b.indices.length; i++){
-          a.indices[a.indices.length++] = b.indices[i]; //Append b's indices to a
+          a.indices.val[a.indices.length++] = b.indices.val[i]; //Append b's indices to a
         }
       }
 
       function xorStepRow(StepRow a, StepRow b) internal returns (StepRow){
-        if (a.indices[0] < b.indices[0]) {
+        if (a.indices.val[0] < b.indices.val[0]) {
           xorEqStepRow(a,b);
           return a;
         }
@@ -53,9 +61,9 @@ contract StepRowLib is BLAKE2b{
       }
 
       function trimHashStepRow(StepRow a, uint l) internal {
-        uint64[] memory p;
+        uint64[8] memory p;
         for(uint i = 0; i < a.len - l; i++){
-          p[p.length++] = a.hash[i + l];
+          p[i] = a.hash[i + l];
         }
 
         a.hash = p;
@@ -76,19 +84,47 @@ contract StepRowLib is BLAKE2b{
         return true;
       }
 
+      function sortIndices(IndexArray a) private returns (IndexArray b){ //TODO: Sort in-place
+        IndexArray memory tmp;
+        for(uint i = 0 ; i < a.length; i++){
+          uint j = 0;
+          while (tmp.val[j] < a.val[i]){
+            j++;
+          }
+          insert(tmp, a.val[i], j);
+        }
+        return tmp;
+      }
+
+      function insert(IndexArray a, uint32 b, uint i) private {
+        uint32 tmp;
+        uint32 tmp1 = b;
+        for(uint j; j<a.length; j++){
+          tmp = a.val[j];
+          a.val[j] = tmp1;
+          tmp1 = tmp;
+        }
+        a.length++;
+      }
+
       function indicesBeforeStepRow(StepRow a, StepRow b) internal returns (bool){
-        return a.indices[0] < b.indices[0];
+        return a.indices.val[0] < b.indices.val[0];
       }
 
       function areDistinctStepRow(StepRow a, StepRow b) internal returns (bool){
+        IndexArray memory aSort = sortIndices(a.indices);
+        IndexArray memory bSort = sortIndices(b.indices);
 
-        for(uint i; i< a.indices.length; i++){
-          map[a.indices[i]] = true;
+        uint i = 0;
+        for(uint j = 0; j<bSort.length; j++){
+          while (aSort.val[i] < bSort.val[j]){
+            i++;
+            if(i == aSort.length) return true;
+          }
+          assert(aSort.val[i] >= bSort.val[j]);
+          if(aSort.val[i] == bSort.val[j]) return false;
         }
 
-        for(i = 0; i<b.indices.length; i++){
-          if(map[b.indices[i]]) return false;
-        }
         return true;
       }
 
