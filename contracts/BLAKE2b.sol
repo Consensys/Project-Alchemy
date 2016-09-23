@@ -1,5 +1,5 @@
 import "./GasTest.sol";
-import "./constants.sol";
+import "./BLAKE2b_Constants.sol";
 
 contract BLAKE2b is GasTest, BLAKE2_Constants{
 

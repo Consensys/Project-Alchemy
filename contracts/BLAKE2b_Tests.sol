@@ -1,4 +1,4 @@
-import "./blake2.sol";
+import "./BLAKE2b.sol";
 import "dapple/test.sol";
 
 contract EventDefinitions {
