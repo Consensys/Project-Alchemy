@@ -87,7 +87,6 @@ contract BlakeTest is Test, EventDefinitions, GasTest {
                                 0x0000000000000000,0x0000000000000000];
 
     assertTrue(equals(result, trueHash));
-    ReportGas(startGas-msg.gas);
   }
 
   function testPersonalization(){
@@ -113,7 +112,6 @@ contract BlakeTest is Test, EventDefinitions, GasTest {
                                 0x0000000000000000,0x0000000000000000];
 
     assertTrue(equals(result, trueHash), bytes32(result[0]));
-    ReportGas(startGas-msg.gas);
   }
 
   function testOutputFormatter(){
