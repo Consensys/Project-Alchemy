@@ -1,5 +1,5 @@
 pragma solidity ^0.4.0;
-import "./blake2.sol";
+import "BLAKE2b/BLAKE2b.sol";
 
 contract StepRowLib is BLAKE2b{
       uint constant n = 96;

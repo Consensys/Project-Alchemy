@@ -1,5 +1,5 @@
 pragma solidity ^0.4.0;
-import "./StepRowLib.sol";
+import "Equihash/StepRowLib.sol";
 contract EquihashValidator is StepRowLib{
 
     struct Equihash{

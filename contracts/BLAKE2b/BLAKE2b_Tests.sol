@@ -1,5 +1,4 @@
-pragma solidity ^0.4.0;
-import "./blake2.sol";
+import "BLAKE2b/BLAKE2b.sol";
 import "dapple/test.sol";
 
 contract EventDefinitions {
@@ -88,7 +87,6 @@ contract BlakeTest is Test, EventDefinitions, GasTest {
                                 0x0000000000000000,0x0000000000000000];
 
     assertTrue(equals(result, trueHash));
-    ReportGas(startGas-msg.gas);
   }
 
   function testPersonalization(){
@@ -114,7 +112,6 @@ contract BlakeTest is Test, EventDefinitions, GasTest {
                                 0x0000000000000000,0x0000000000000000];
 
     assertTrue(equals(result, trueHash), bytes32(result[0]));
-    ReportGas(startGas-msg.gas);
   }
 
   function testOutputFormatter(){

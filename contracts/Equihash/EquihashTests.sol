@@ -1,5 +1,5 @@
-gpragma solidity ^0.4.0;
-import "./equihash.sol";
+pragma solidity ^0.4.2;
+import "Equihash/equihash.sol";
 import "dapple/test.sol";
 
 contract EquihashTest is Test {
