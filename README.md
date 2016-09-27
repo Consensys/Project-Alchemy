@@ -19,8 +19,3 @@ Install Dapple (version >= 0.8)
 Run tests
 
     dapple test
-
-
-## zkSNARKS
-
-Another priority is the incorporation of [zkSNARKs](https://github.com/scipr-lab/libsnark) directly into the EVM. An EIP for this is forthcoming, following the ideas and implementation work done in the [Baby ZoE](https://github.com/zcash/babyzoe) project.
