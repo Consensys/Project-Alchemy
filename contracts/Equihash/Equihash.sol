@@ -31,14 +31,14 @@ contract EquihashValidator is StepRowLib{
     output = out;
   }
 
-  function IsValidSolution(uint32[512] soln){
+  function IsValidSolution(uint32[512] soln) returns (bool){
     BLAKE2b_ctx memory baseState;
     initializeState(baseState);
     StepRow[] memory X = new StepRow[](512);
     bytes memory tmpHash;
     for(uint i; i<512; i++){ //Fill X with steprows
       generateHash(baseState, soln[i], tmpHash);
-      X[i] = StepRow(tmpHash, HashLength, CollisionBitLength, soln[i]);
+      X[i] = newStepRow(tmpHash, HashLength, CollisionBitLength, soln[i]);
     }
   }
 
@@ -49,7 +49,10 @@ contract EquihashValidator is StepRowLib{
 
     for(i = 0; i < X.length; i+=2){
 
-      //DO_CHECKS Here
+      // Algorithm Binding Conditions
+      if(!HasCollision(X[i], X[i+1], CollisionByteLength)) return false;
+      if(IndicesBefore(X[i+1], X[i]), hashLen, lenIndices) return false;
+      if(!DistinctIndices(X[i], X[i+1], hashLen, lenIndices)) return false;
 
       Xc[i/2] = mergeStepRows(X[i], X[i+1], hashLen, lenIndices, CollisionByteLength);
     }
@@ -59,5 +62,6 @@ contract EquihashValidator is StepRowLib{
     lenIndices *= 2;
   }
 
+  //General Birthday Condition
   return IsZero(X[0], hashLen);
 }
