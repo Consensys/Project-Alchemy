@@ -20,7 +20,6 @@ Run tests
 
     dapple test
 
-<<<<<<< HEAD
 Note: requires dapple >= v0.8 and Solc >= 0.4.2 you may have to build from source.
 
 ## References
@@ -28,9 +27,3 @@ Note: requires dapple >= v0.8 and Solc >= 0.4.2 you may have to build from sourc
   [BLAKE2](https://blake2.net/blake2.pdf)
 
   [Equihash](https://www.internetsociety.org/sites/default/files/blogs-media/equihash-asymmetric-proof-of-work-based-generalized-birthday-problem.pdf)
-=======
-
-## zkSNARKS
-
-Another priority is the incorporation of [zkSNARKs](https://github.com/scipr-lab/libsnark) directly into the EVM. An EIP for this is forthcoming, following the ideas and implementation work done in the [Baby ZoE](https://github.com/zcash/babyzoe) project.
->>>>>>> master
