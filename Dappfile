@@ -5,4 +5,4 @@ layout:
   build_dir: build
 dependencies: {}
 ignore: []
-name: eth-blake2
+name: zrelay

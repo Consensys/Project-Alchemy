@@ -1,5 +1,6 @@
-import "./GasTest.sol";
-import "./BLAKE2b_Constants.sol";
+pragma solidity ^0.4.2;
+import "BLAKE2b/GasTest.sol";
+import "BLAKE2b/BLAKE2b_Constants.sol";
 
 contract BLAKE2b is GasTest, BLAKE2_Constants{
 
@@ -46,7 +47,8 @@ contract BLAKE2b is GasTest, BLAKE2_Constants{
        v[d] = vd;
   }
 
-  function compress(BLAKE2b_ctx ctx, bool last) private {
+
+  function compress(BLAKE2b_ctx ctx, bool last) internal {
     //TODO: Look into storing these as uint256[4]
     uint64[16] memory v;
     uint64[16] memory m;
@@ -102,7 +104,8 @@ contract BLAKE2b is GasTest, BLAKE2_Constants{
 
   }
 
-  function init(BLAKE2b_ctx ctx, uint64 outlen, bytes key, uint64[2] salt, uint64[2] person) private{
+
+  function init(BLAKE2b_ctx ctx, uint64 outlen, bytes key, uint64[2] salt, uint64[2] person) internal{
 
       if(outlen == 0 || outlen > 64 || key.length > 64) throw;
 
@@ -128,7 +131,8 @@ contract BLAKE2b is GasTest, BLAKE2_Constants{
       }
   }
 
-  function update(BLAKE2b_ctx ctx, bytes input) private {
+
+  function update(BLAKE2b_ctx ctx, bytes input) internal {
 
     for(uint i = 0; i < input.length; i++){
       //If buffer is full, update byte counters and compress
@@ -152,7 +156,8 @@ contract BLAKE2b is GasTest, BLAKE2_Constants{
     }
   }
 
-  function finalize(BLAKE2b_ctx ctx, uint64[8] out) private {
+
+  function finalize(BLAKE2b_ctx ctx, uint64[8] out) internal {
     // Add any uncounted bytes
     ctx.t += ctx.c;
 
