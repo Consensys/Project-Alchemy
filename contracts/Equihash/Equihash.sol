@@ -10,7 +10,7 @@ contract EquihashValidator is StepRowLib{
 
   function initializeState(BLAKE2b_ctx baseState) internal{
     uint64[2] memory person = [powString, paramString];
-    init(baseState, (512/N)*N/8, "", formatInput(""), person);
+    init(baseState, uint64((512/N)*N/8), "", formatInput(""), person);
   }
 
   function generateHash(BLAKE2b_ctx baseState, uint32 g, bytes output) internal{
@@ -40,28 +40,29 @@ contract EquihashValidator is StepRowLib{
       generateHash(baseState, soln[i], tmpHash);
       X[i] = newStepRow(tmpHash, HashLength, CollisionBitLength, soln[i]);
     }
-  }
 
-  uint hashLen = HashLength;
-  uint lenIndices = 4;
-  while(X.length > 1 ){
-    StepRow[] memory Xc = new StepRow[](X.length / 2);
+    uint hashLen = HashLength;
+    uint lenIndices = 4;
+    while(X.length > 1 ){
+      StepRow[] memory Xc = new StepRow[](X.length / 2);
 
-    for(i = 0; i < X.length; i+=2){
+      for(i = 0; i < X.length; i+=2){
 
-      // Algorithm Binding Conditions
-      if(!HasCollision(X[i], X[i+1], CollisionByteLength)) return false;
-      if(IndicesBefore(X[i+1], X[i]), hashLen, lenIndices) return false;
-      if(!DistinctIndices(X[i], X[i+1], hashLen, lenIndices)) return false;
+        // Algorithm Binding Conditions
+        if(!HasCollision(X[i], X[i+1], CollisionByteLength)) return false;
+        if(IndicesBefore(X[i+1], X[i], hashLen, lenIndices)) return false;
+        if(!DistinctIndices(X[i], X[i+1], hashLen, lenIndices)) return false;
 
-      Xc[i/2] = mergeStepRows(X[i], X[i+1], hashLen, lenIndices, CollisionByteLength);
+        Xc[i/2] = mergeStepRows(X[i], X[i+1], hashLen, lenIndices, CollisionByteLength);
+      }
+
+      X = Xc;
+      hashLen -= CollisionByteLength;
+      lenIndices *= 2;
     }
 
-    X = Xc;
-    hashLen -= CollisionByteLength;
-    lenIndices *= 2;
+    //General Birthday Condition
+    return IsZero(X[0], hashLen);
   }
-
-  //General Birthday Condition
-  return IsZero(X[0], hashLen);
+  
 }
