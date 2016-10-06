@@ -1,14 +1,14 @@
 pragma solidity ^0.4.2;
-import "Equihash/equihash.sol";
+import "Equihash/EquihashTester.sol";
 import "dapple/test.sol";
 
 contract EquihashTest is Test {
 
-  EquihashValidator equi;
+  EquihashTester equi;
   Tester tester;
 
   function EquihashTest(){
-    equi = new EquihashValidator();
+    equi = new EquihashTester();
   }
 
   function setUp(){
@@ -26,8 +26,16 @@ contract EquihashTest is Test {
       s[i] = soln[i];
     }
     bool correct = true;
-    bool valid = equi.validate(seed, nonce, s);
+  //  bool valid = equi.IsValidSolution(soln);
 
-    assertTrue(correct==valid);
+    //assertTrue(correct==valid);
+  }
+
+  function testExpandArray(){
+    bytes memory inp = "\x02\x20\x0a\x7f\xff";
+    bytes memory exp = "\x44\x29";
+    uint bits = 21;
+
+    assertTrue(equi.testExpandArray(inp,bits,exp));
   }
 }
