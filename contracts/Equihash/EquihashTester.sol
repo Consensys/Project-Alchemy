@@ -3,9 +3,9 @@ import "Equihash/Equihash.sol";
 
 contract EquihashTester is EquihashValidator{
 
-  function testGenerator(uint32 g, uint64[8] expected) returns (bool){
+  function testGenerator(uint32 g, bytes expected) returns (bool){
     BLAKE2b_ctx memory state;
-    uint64[8] memory out;
+    bytes memory out;
     initializeState(state);
     generateHash(state, g, out);
 

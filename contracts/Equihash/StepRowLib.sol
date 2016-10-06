@@ -24,12 +24,12 @@ contract StepRowLib is BLAKE2b{
   }
 
   //Merge a and b into s
-  function mergeStepRows(StepRow memory a, StepRow memory b, uint len, uint lenIndices, int trim) internal returns (StepRow){
+  function mergeStepRows(StepRow memory a, StepRow memory b, uint len, uint lenIndices, uint trim) internal returns (StepRow){
     StepRow memory s;
 
     s.hash = a.hash;
 
-    for(int i = trim; i < len; i++){
+    for(uint i = trim; i < len; i++){
       s.hash[i-trim] = a.hash[i] ^ b.hash[i];
     }
     if(IndicesBefore(a, b, len, lenIndices)){
@@ -51,8 +51,8 @@ contract StepRowLib is BLAKE2b{
 
   // True iff a.hash^b.hash has collisionLength leading 0-bytes
   function HasCollision(StepRow memory a, StepRow memory b, uint collisionLength) internal returns (bool){
-    for(uint j = 0; j < collisionLength; j++){
-      if(a.hash[i] != b.has[i]) return false;
+    for(uint i = 0; i < collisionLength; i++){
+      if(a.hash[i] != b.hash[i]) return false;
     }
     return true;
   }
@@ -146,8 +146,8 @@ contract StepRowLib is BLAKE2b{
 
   function EhIndexToArray(uint32 i, bytes hash, uint hLen) internal {
     uint32 bei = uint32(getWords(i));
-    for(uint i = 0, i < 4; i++){
-      hash[i+ hLen] = byte(shift_right(bei, 8*(3-i)) & 0xFF);
+    for(uint j = 0; j < 4; j++){
+      hash[j + hLen] = byte(shift_right(bei, 8*(3-j)) & 0xFF);
     }
   }
 }

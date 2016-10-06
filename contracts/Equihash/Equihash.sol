@@ -64,5 +64,5 @@ contract EquihashValidator is StepRowLib{
     //General Birthday Condition
     return IsZero(X[0], hashLen);
   }
-  
+
 }
