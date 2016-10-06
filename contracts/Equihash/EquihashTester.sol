@@ -15,4 +15,17 @@ contract EquihashTester is EquihashValidator{
     return true;
   }
 
+  function testExpandArray(bytes inp, uint len, bytes expected)returns (bool){
+    bytes memory out = new bytes(8*(inp.length/len));
+
+    ExpandArray(inp, out, len);
+
+    if(out.length != expected.length) return false;
+    for(uint i; i<out.length; i++){
+      if (out[i] != expected[i]) return false;
+    }
+
+    return true;
+  }
+
 }
