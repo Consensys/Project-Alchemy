@@ -1,7 +1,14 @@
-contract ZRelay {
+import "./constants.sol";
+contract ZRelay is Constants {
+
+  struct Block{
+    bytes32 bloockHash;
+    byte[80] rawHeader;
+  }
 
   bytes32 public chainHead;
-  uint public highestBlock;
+
+  mapping(uint => bytes32) chain;
 
   function verifyTx(bytes rawTransaction, uint transactionIndex, uint[] merkleProof, uint blockHash)returns(bytes32){
     bytes32 txHash = dblSHA(rawTransaction);
@@ -75,4 +82,34 @@ contract ZRelay {
     }
     return false;
   }
+
+  function getBlockHeader(bytes32 blockHash)returns (byte[80] header){
+    if(!feePaid(blockHash)) return;
+    return blocks[blockHash].blockHeader;
+  }
+
+  function getPreviousBlock(blockHash) constant returns (bytes32){
+    return blocks[blockHash].parent;
+  }
+
+  function dblSHA(bytes data) constant returns (bytes32){
+    return flip32(sha256(sha256(data)));
+  }
+
+  function targetFromBits(bytes32 bits) constant returns (uint difficulty){
+    uint exp = uint(bits) / 0x1000000;
+    return (bits &  0xffffff) * 256**(exp-3)
+  }
+
+  function concatHash(bytes32 a, bytes32 b) returns (bytes32){
+    return flip32(sha256(sha256(flip32(a), flip32(b))));
+  }
+
+  function flip32(bytes32 a) constant returns (bytes32 b){
+    for(uint i; i < 32; i++){
+      //TODO: Make this efficient
+    }
+  }
+
+  function
 }
