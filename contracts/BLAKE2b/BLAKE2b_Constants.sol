@@ -1,8 +1,9 @@
+pragma solidity ^0.4.7;
 contract BLAKE2_Constants{
     /*
     Constants, as defined in RFC 7693
     */
-    uint8[16][12] public SIGMA = [
+/*    uint8[16][12] public SIGMA = [
           [  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15 ],
           [ 14,10, 4, 8, 9,15,13, 6, 1,12, 0, 2,11, 7, 5, 3 ],
           [ 11, 8,12, 0, 5, 2,15,13,10,14, 3, 6, 7, 1, 9, 4 ],
@@ -16,12 +17,10 @@ contract BLAKE2_Constants{
           [  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15 ],
           [ 14,10, 4, 8, 9,15,13, 6, 1,12, 0, 2,11, 7, 5, 3 ]
       ];
-
-      uint64[8] public IV = [
-          0x6a09e667f3bcc908, 0xbb67ae8584caa73b,
-          0x3c6ef372fe94f82b, 0xa54ff53a5f1d36f1,
-          0x510e527fade682d1, 0x9b05688c2b3e6c1f,
-          0x1f83d9abfb41bd6b, 0x5be0cd19137e2179
+*/
+      uint256[2] public IV = [
+          0x6a09e667f3bcc908bb67ae8584caa73b3c6ef372fe94f82ba54ff53a5f1d36f1,
+          0x510e527fade682d19b05688c2b3e6c1f1f83d9abfb41bd6b5be0cd19137e2179
       ];
 
       uint64 constant MASK_0 = 0xFF00000000000000;

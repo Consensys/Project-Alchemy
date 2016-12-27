@@ -1,128 +1,83 @@
-pragma solidity ^0.4.2;
-import "BLAKE2b/GasTest.sol";
-import "BLAKE2b/BLAKE2b_Constants.sol";
+pragma solidity ^0.4.7;
+import "./BLAKE2b_Constants.sol";
+//Remember to deal with empty case
+contract BLAKE2b is BLAKE2_Constants{
 
-contract BLAKE2b is GasTest, BLAKE2_Constants{
+  event Compressing(uint256[2] h);
 
   struct BLAKE2b_ctx {
     uint256[4] b; //input buffer
-    uint64[8] h;  //chained state
-    uint128 t; //total bytes
-    uint64 c; //Size of b
+    uint256[2] h;  //chained state
+    uint t; //total bytes
+    uint c; //Size of b
     uint outlen; //diigest output size
-  }
-
-  // Mixing Function
-  function G(uint64[16] v, uint a, uint b, uint c, uint d, uint64 x, uint64 y) constant {
-
-       // Dereference to decrease memory reads
-       uint64 va = v[a];
-       uint64 vb = v[b];
-       uint64 vc = v[c];
-       uint64 vd = v[d];
-
-       //Optimised mixing function
-       assembly{
-         // v[a] := (v[a] + v[b] + x) mod 2**64
-         va := addmod(add(va,vb),x, 0x10000000000000000)
-         //v[d] := (v[d] ^ v[a]) >>> 32
-         vd := xor(div(xor(vd,va), 0x100000000), mulmod(xor(vd, va),0x100000000, 0x10000000000000000))
-         //v[c] := (v[c] + v[d])     mod 2**64
-         vc := addmod(vc,vd, 0x10000000000000000)
-         //v[b] := (v[b] ^ v[c]) >>> 24
-         vb := xor(div(xor(vb,vc), 0x1000000), mulmod(xor(vb, vc),0x10000000000, 0x10000000000000000))
-         // v[a] := (v[a] + v[b] + y) mod 2**64
-         va := addmod(add(va,vb),y, 0x10000000000000000)
-         //v[d] := (v[d] ^ v[a]) >>> 16
-         vd := xor(div(xor(vd,va), 0x10000), mulmod(xor(vd, va),0x1000000000000, 0x10000000000000000))
-         //v[c] := (v[c] + v[d])     mod 2**64
-         vc := addmod(vc,vd, 0x10000000000000000)
-         // v[b] := (v[b] ^ v[c]) >>> 63
-         vb := xor(div(xor(vb,vc), 0x8000000000000000), mulmod(xor(vb, vc),0x2, 0x10000000000000000))
-       }
-
-       v[a] = va;
-       v[b] = vb;
-       v[c] = vc;
-       v[d] = vd;
+    bytes32[2] out;
   }
 
 
   function compress(BLAKE2b_ctx ctx, bool last) internal {
-    //TODO: Look into storing these as uint256[4]
-    uint64[16] memory v;
-    uint64[16] memory m;
-
-
-    for(uint i=0; i<8; i++){
-      v[i] = ctx.h[i]; // v[:8] = h[:8]
-      v[i+8] = IV[i];  // v[8:] = IV
+    //Serialize context
+    uint[2] memory h = ctx.h;
+    uint[4] memory b = ctx.b;
+    uint t = ctx.t;
+    uint tf = (t >> 64) << 128;
+    tf ^= (t & ((1<<64) - 1)) << 192;
+    if(last){
+        tf ^= ((1<<64)-1)<<64;
     }
-
-    //
-    v[12] = v[12] ^ uint64(ctx.t % 2**64);  //Lower word of t
-    v[13] = v[13] ^ uint64(ctx.t / 2**64);
-
-    if(last) v[14] = ~v[14];   //Finalization flag
-
-    uint64 mi;  //Temporary stack variable to decrease memory ops
-    uint b; // Input buffer
-
-    for(i = 0; i <16; i++){ //Operate 16 words at a time
-      uint k = i%4; //Current buffer word
-      mi = 0;
-      if(k == 0){
-        b=ctx.b[i/4];  //Load relevant input into buffer
-      }
-
-      //Extract relevent input from buffer
-      assembly{
-        mi := and(div(b,exp(2,mul(64,sub(3,k)))), 0xFFFFFFFFFFFFFFFF)
-      }
-
-      //Flip endianness
-      m[i] = getWords(mi);
+    bytes32 sig = sha3("Compressing(uint256[2])");
+    bool success;
+    assembly {
+        let m := mload(0x40)
+        mstore(m,mload(h))
+        mstore(add(m,0x20),mload(add(h,0x20)))
+        mstore(add(m,0x40),mload(b))
+        mstore(add(m,0x60), mload(add(b,0x20)))
+        mstore(add(m,0x80), mload(add(b,0x40)))
+        mstore(add(m,0xA0), mload(add(b,0x60)))
+        mstore(add(m,0xC0), tf)
+        log1(m,0xE0,sig)
+        success := call(1000,5,0,m,0xE0,h,0x40)
+        log1(h,0x40,sig)
     }
-
-    //Mix m
-    for(i=0; i<12; i++){
-      //TODO: Dereference SIGMA[i]
-      G( v, 0, 4, 8, 12, m[SIGMA[i][0]], m[SIGMA[i][1]]);
-      G( v, 1, 5, 9, 13, m[SIGMA[i][2]], m[SIGMA[i][3]]);
-      G( v, 2, 6, 10, 14, m[SIGMA[i][4]], m[SIGMA[i][5]]);
-      G( v, 3, 7, 11, 15, m[SIGMA[i][6]], m[SIGMA[i][7]]);
-      G( v, 0, 5, 10, 15, m[SIGMA[i][8]], m[SIGMA[i][9]]);
-      G( v, 1, 6, 11, 12, m[SIGMA[i][10]], m[SIGMA[i][11]]);
-      G( v, 2, 7, 8, 13, m[SIGMA[i][12]], m[SIGMA[i][13]]);
-      G( v, 3, 4, 9, 14, m[SIGMA[i][14]], m[SIGMA[i][15]]);
-    }
-
-    //XOR current state with both halves of v
-    for(i=0; i<8; ++i){
-      ctx.h[i] = ctx.h[i] ^ v[i] ^ v[i+8];
-    }
-
+    if(!success) throw;
   }
 
 
-  function init(BLAKE2b_ctx ctx, uint64 outlen, bytes key, uint64[2] salt, uint64[2] person) internal{
+  function init(BLAKE2b_ctx ctx, uint64 outlen, bytes key, uint128 salt, uint128 person) internal{
 
       if(outlen == 0 || outlen > 64 || key.length > 64) throw;
-
+/*
       //Initialize chained-state to IV
       for(uint i = 0; i< 8; i++){
         ctx.h[i] = IV[i];
       }
 
+
+*/
+    uint256[2] memory IV = [
+    0x6a09e667f3bcc908bb67ae8584caa73b3c6ef372fe94f82ba54ff53a5f1d36f1,
+    0x510e527fade682d19b05688c2b3e6c1f1f83d9abfb41bd6b5be0cd19137e2179
+    ];
+
+      uint256[2] memory h = ctx.h;
+      assembly {
+          let iv := mload(IV)
+          mstore(h,iv)
+          iv := mload(add(IV,0x20))
+          mstore(add(h,0x20),iv)
+      }
+
+
       // Set up parameter block
-      ctx.h[0] = ctx.h[0] ^ 0x01010000 ^ shift_left(uint64(key.length), 8) ^ outlen;
-      ctx.h[4] = ctx.h[4] ^ salt[0];
-      ctx.h[5] = ctx.h[5] ^ salt[1];
-      ctx.h[6] = ctx.h[6] ^ person[0];
-      ctx.h[7] = ctx.h[7] ^ person[1];
+      ctx.h[0] ^= ((0x01010000 ^ (key.length << 8) ^ outlen) << (64*3));
+      ctx.h[1] ^= salt ^ (person << 64);
+      //ctx.h[5] = ctx.h[5] ^ salt[1];
+      //ctx.h[6] = ctx.h[6] ^ person[0];
+      //ctx.h[7] = ctx.h[7] ^ person[1];
 
       ctx.outlen = outlen;
-      i = key.length;
+      //i = key.length;
 
       //Run hash once with key as input
       if(key.length > 0){
@@ -157,7 +112,7 @@ contract BLAKE2b is GasTest, BLAKE2_Constants{
   }
 
 
-  function finalize(BLAKE2b_ctx ctx, uint64[8] out) internal {
+  function finalize(BLAKE2b_ctx ctx) internal {
     // Add any uncounted bytes
     ctx.t += ctx.c;
 
@@ -165,17 +120,20 @@ contract BLAKE2b is GasTest, BLAKE2_Constants{
     compress(ctx,true);
 
     //Flip little to big endian and store in output buffer
-    for(uint i=0; i < ctx.outlen / 8; i++){
-      out[i] = getWords(ctx.h[i]);
-    }
+    ctx.out[0] = bytes32(ctx.h[0]);
+    ctx.out[1] = bytes32(ctx.h[1]);
+    flip_endian(ctx.out);
+
 
     //Properly pad output if it doesn't fill a full word
-    if(ctx.outlen < 64){
-      out[ctx.outlen/8] = shift_right(getWords(ctx.h[ctx.outlen/8]),64-8*(ctx.outlen%8));
-    }
+//    if(ctx.outlen < 64){
+ //     bytes32 a = ctx.out[ctx.outlen/32];
+      //ctx.out[ctx.outlen/32] = shift_right(getWords(ctx.h[ctx.outlen/8]),64-8*(ctx.outlen%8));
+
+//    }
 
   }
-
+/*
   //Helper function for full hash function
   function blake2b(bytes input, bytes key, bytes salt, bytes personalization, uint64 outlen) constant public returns(uint64[8]){
 
@@ -191,21 +149,56 @@ contract BLAKE2b is GasTest, BLAKE2_Constants{
   function blake2b(bytes input, bytes key, uint64 outlen) constant returns (uint64[8]){
     return blake2b(input, key, "", "", outlen);
   }
+*/
+
+ function blake2b(bytes input, bytes key, bytes16 salt, bytes16 personalization, uint64 outlen) constant public returns(bytes32[2]){
+
+    BLAKE2b_ctx memory ctx;
+
+    init(ctx, outlen, key, uint128(salt), uint128(personalization));
+    update(ctx, input);
+    finalize(ctx);
+    return ctx.out;
+  }
 
 // Utility functions
 
-  //Flips endianness of words
-  function getWords(uint64 a) constant returns (uint64 b) {
-    return  (a & MASK_0) / SHIFT_0 ^
+  function getWords(bytes32 c) constant returns (bytes32 b) {
+    uint64 a = uint64(c);
+    return  bytes32((a & MASK_0) / SHIFT_0 ^
             (a & MASK_1) / SHIFT_1 ^
             (a & MASK_2) / SHIFT_2 ^
             (a & MASK_3) / SHIFT_3 ^
             (a & MASK_4) * SHIFT_3 ^
             (a & MASK_5) * SHIFT_2 ^
             (a & MASK_6) * SHIFT_1 ^
-            (a & MASK_7) * SHIFT_0;
+            (a & MASK_7) * SHIFT_0);
   }
 
+
+  function flip_endian(bytes32[2] a){
+/*      uint64 c;
+      for(uint i = 0; i < 8; i++){
+          uint mask = ((1 << 64) - 1) << ((4-(i%4))*64)
+          assembly{
+              let w := mload(add(a,div(i,4)))
+              w := and(w,mask)
+
+          }
+      }*/
+      bytes32 mask = (1<<64)-1;
+      bytes32 b = a[0];
+      a[0] = (getWords((b >> (64*3))&mask) << (64*3)) ^
+          (getWords((b >> (64*2))&mask) << (64*2)) ^
+          (getWords((b >> (64))&mask) << (64)) ^
+          (getWords(b&mask));
+      b = a[1];
+      a[1] = (getWords((b >> (64*3))&mask) << (64*3)) ^
+          (getWords((b >> (64*2))&mask) << (64*2)) ^
+          (getWords((b >> (64))&mask) << (64)) ^
+          (getWords(b&mask));
+  }
+  /*
   function shift_right(uint64 a, uint shift) constant returns(uint64 b){
     return uint64(a / 2**shift);
   }
@@ -231,4 +224,6 @@ contract BLAKE2b is GasTest, BLAKE2_Constants{
     }
     return result;
   }
+
+  */
 }
