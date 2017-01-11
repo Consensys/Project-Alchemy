@@ -1,8 +1,18 @@
 version: 1.0.0
 tags: []
 layout:
-  sol_sources: contracts
-  build_dir: build
+  sol_sources: ./contracts
+  build_dir: ./build
 dependencies: {}
 ignore: []
 name: zrelay
+description: ''
+authors: []
+license: Apache-2.0
+keywords:
+  - dapple
+dapple_version: 0.8.39
+environments:
+  master:
+    objects: {}
+    type: internal
