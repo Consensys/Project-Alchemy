@@ -271,6 +271,17 @@ contract BLAKE2b is GasTest, BLAKE2_Constants{
     // Add any uncounted bytes
     ctx.t += ctx.c;
 
+    // zero out left over bytes (if key is longer than input)
+    uint c = ctx.c++;
+    uint8 a = 0;
+    uint256[4] memory b = ctx.b;
+    for(uint i = c; i < 128; i++) {
+      // ctx.b[i] = 0
+      assembly{
+        mstore8(add(b,i),a)
+      }
+    }
+
     // Compress with finalization flag
     compress(ctx,true);
 
